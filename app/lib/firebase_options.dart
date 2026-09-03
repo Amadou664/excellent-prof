@@ -8,11 +8,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions n\'a pas été configuré pour le web. '
-        'Lancez `flutterfire configure` pour générer une configuration web '
-        'si besoin.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -35,7 +31,6 @@ class DefaultFirebaseOptions {
     projectId: 'excellent-prof',
     storageBucket: 'excellent-prof.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAKNf4cZ1s3qKfTgFZ8cNskQhHu-7LfIG4',
     appId: '1:312273081281:ios:6b9aabd6463ad724635540',
@@ -43,5 +38,13 @@ class DefaultFirebaseOptions {
     projectId: 'excellent-prof',
     storageBucket: 'excellent-prof.firebasestorage.app',
     iosBundleId: 'com.excellentprof.excellentProf',
+  );
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyDH93-wLNvZn6JWq6d3xbrOnht-szUJrLk',
+    appId: '1:312273081281:web:81f60d4fab71f9b5635540',
+    messagingSenderId: '312273081281',
+    projectId: 'excellent-prof',
+    authDomain: 'excellent-prof.firebaseapp.com',
+    storageBucket: 'excellent-prof.firebasestorage.app',
   );
 }
