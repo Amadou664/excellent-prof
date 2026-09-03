@@ -1,0 +1,297 @@
+// Schema Prisma — L'Excellent Prof
+// Genere le client dans node_modules/@prisma/client (defaut).
+// NOTE: ce fichier n'a jamais besoin d'une connexion reseau pour `prisma validate` ou `prisma generate`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums (voir API_CONTRACT.md — section "Enums partages")
+// ---------------------------------------------------------------------------
+
+enum Role {
+  PARENT
+  PROFESSEUR
+  ETUDIANT
+  PARTICULIER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIF
+  EN_ATTENTE
+  SUSPENDU
+  DESACTIVE
+}
+
+enum Niveau {
+  FONDAMENTAL
+  COLLEGE
+  LYCEE
+  SUPERIEUR
+}
+
+enum Programme {
+  FRANCAIS
+  MALIEN
+}
+
+enum ModePref {
+  DOMICILE
+  LIGNE
+  GROUPE
+}
+
+enum DemandeStatus {
+  NOUVELLE
+  PROF_PROPOSE
+  CONFIRMEE
+  EN_COURS
+  TERMINEE
+  ANNULEE
+}
+
+enum StatutCandidature {
+  SOUMISE
+  ENTRETIEN
+  VALIDEE
+  REFUSEE
+}
+
+enum AnnonceType {
+  RECRUTEMENT
+  FORMATION
+  EVENEMENT
+  RESULTAT
+  INFO
+}
+
+enum Visibilite {
+  PUBLIC
+  CONNECTES
+}
+
+enum AvisStatut {
+  VISIBLE
+  MASQUE
+}
+
+// NOTE (divergence mineure documentee dans le rapport de livraison) : API_CONTRACT.md ne liste
+// pas de statut initial de Seance dans les "Enums partages" — il mentionne seulement la
+// transition `PATCH /seances/:id/statut` avec "EFFECTUEE|ANNULEE". Une seance a forcement un
+// etat avant d'etre marquee EFFECTUEE ou ANNULEE (dès sa creation, avant la date prevue) : on
+// ajoute donc PLANIFIEE comme etat initial.
+enum SeanceStatut {
+  PLANIFIEE
+  EFFECTUEE
+  ANNULEE
+}
+
+// ---------------------------------------------------------------------------
+// Modeles
+// ---------------------------------------------------------------------------
+
+model User {
+  id          String     @id @default(uuid())
+  firebaseUid String     @unique
+  email       String     @unique
+  telephone   String
+  nom         String
+  prenom      String
+  role        Role
+  status      UserStatus @default(EN_ATTENTE)
+  ville       String
+  photoUrl    String?
+  fcmToken    String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  teacherProfile TeacherProfile?
+
+  // Un Student peut etre rattache soit a un parent (compte PARENT), soit directement
+  // au compte de l'eleve/particulier lui-meme (role ETUDIANT | PARTICULIER).
+  childStudents Student[] @relation("StudentParent")
+  selfStudent   Student[] @relation("StudentSelf")
+
+  demandesAssignees Demande[] @relation("DemandeProfesseur")
+  seancesEnTantQueProf Seance[] @relation("SeanceProfesseur")
+
+  avisRecus  Avis[] @relation("AvisProfesseur")
+  avisEcrits Avis[] @relation("AvisAuteur")
+
+  @@index([role])
+  @@index([status])
+}
+
+model TeacherProfile {
+  id                 String            @id @default(uuid())
+  userId             String            @unique
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialites        String[]
+  diplomesUrls       String[]
+  bio                String            @default("")
+  zoneGeo            String            @default("")
+  // Ex: { "lundi": ["18:00-20:00"], "mardi": [] }
+  disponibilites     Json              @default("{}")
+  statutCandidature  StatutCandidature @default(SOUMISE)
+  noteMoyenne        Float             @default(0)
+  nombreAvis         Int               @default(0)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([statutCandidature])
+}
+
+model Student {
+  id            String    @id @default(uuid())
+  nom           String
+  prenom        String
+  dateNaissance DateTime
+  niveau        Niveau
+  programme     Programme
+
+  parentId String?
+  parent   User?   @relation("StudentParent", fields: [parentId], references: [id], onDelete: Cascade)
+
+  userId String?
+  user   User?   @relation("StudentSelf", fields: [userId], references: [id], onDelete: Cascade)
+
+  demandes      Demande[]
+  inscriptions  InscriptionCoursPourTous[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([parentId])
+  @@index([userId])
+}
+
+model Demande {
+  id          String        @id @default(uuid())
+  studentId   String
+  student     Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  matiere     String
+  modePref    ModePref
+  status      DemandeStatus @default(NOUVELLE)
+  notes       String?
+
+  professeurId String?
+  professeur   User?   @relation("DemandeProfesseur", fields: [professeurId], references: [id])
+
+  seances Seance[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([professeurId])
+  @@index([studentId])
+}
+
+model Seance {
+  id          String       @id @default(uuid())
+  demandeId   String
+  demande     Demande      @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+
+  // Denormalise depuis demande.professeurId au moment de la creation, pour permettre
+  // `GET /seances/mine` (cote PROFESSEUR) sans devoir remonter la relation a chaque requete.
+  professeurId String?
+  professeur   User?   @relation("SeanceProfesseur", fields: [professeurId], references: [id])
+
+  dateSeance DateTime
+  statut     SeanceStatut @default(PLANIFIEE)
+
+  cahierDeTexte CahierDeTexte?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([demandeId])
+  @@index([professeurId])
+}
+
+model CahierDeTexte {
+  id           String   @id @default(uuid())
+  seanceId     String   @unique
+  seance       Seance   @relation(fields: [seanceId], references: [id], onDelete: Cascade)
+  contenu      String   @default("")
+  exercices    String   @default("")
+  devoirs      String   @default("")
+  observations String   @default("")
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
+}
+
+model Annonce {
+  id              String      @id @default(uuid())
+  titre           String
+  contenu         String
+  type            AnnonceType
+  visibilite      Visibilite  @default(PUBLIC)
+  imageUrl        String?
+  datePublication DateTime    @default(now())
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([visibilite])
+  @@index([type])
+}
+
+model CoursPourTous {
+  id                 String   @id @default(uuid())
+  titre              String
+  description        String
+  matiere            String
+  dateDebut          DateTime
+  dateFin            DateTime
+  tarif              Int
+  placesDisponibles  Int
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  inscriptions InscriptionCoursPourTous[]
+
+  @@index([dateDebut])
+}
+
+model InscriptionCoursPourTous {
+  id        String        @id @default(uuid())
+  coursId   String
+  cours     CoursPourTous @relation(fields: [coursId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+
+  @@unique([coursId, studentId])
+  @@index([coursId])
+  @@index([studentId])
+}
+
+model Avis {
+  id           String     @id @default(uuid())
+  professeurId String
+  professeur   User       @relation("AvisProfesseur", fields: [professeurId], references: [id], onDelete: Cascade)
+  auteurId     String
+  auteur       User       @relation("AvisAuteur", fields: [auteurId], references: [id], onDelete: Cascade)
+  note         Int
+  commentaire  String
+  // Choix d'implementation (voir rapport de livraison) : API_CONTRACT.md ne precise pas le
+  // statut initial d'un Avis nouvellement cree, et GET /admin/stats attend un vrai compteur
+  // `avisEnAttenteModeration` calcule (contrairement a chiffreAffaires/tauxFidelisation qui
+  // restent des TODO). Avec seulement 2 valeurs possibles (VISIBLE | MASQUE, imposees telles
+  // quelles par le contrat), on modelise la file de moderation en creant chaque nouvel Avis en
+  // MASQUE par defaut ; un ADMIN le publie explicitement via PATCH /avis/:id/statut { VISIBLE }.
+  // avisEnAttenteModeration = count(Avis où statut = MASQUE).
+  statut       AvisStatut @default(MASQUE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([professeurId])
+  @@index([statut])
+}
