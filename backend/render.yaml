@@ -4,6 +4,7 @@ services:
     runtime: node
     plan: free
     region: frankfurt
+    rootDir: backend
     buildCommand: npm install && npm run build && npx prisma generate
     startCommand: npm run start
     envVars:
