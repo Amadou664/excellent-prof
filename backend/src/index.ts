@@ -17,11 +17,13 @@ import filesRoutes from "./modules/files/files.routes";
 
 const app = express();
 
-app.use(
-  cors({
-    origin: env.corsOrigin === "*" ? true : env.corsOrigin.split(",").map((s) => s.trim()),
-  })
-);
+// L'authentification se fait via un token Firebase en en-tete `Authorization: Bearer`, jamais
+// via cookie : un CORS ouvert n'expose donc pas de risque CSRF ici. On reflete systematiquement
+// l'origine de la requete plutot que de dependre d'une comparaison stricte sur CORS_ORIGIN
+// (fragile : un espace ou une casse differente sur la valeur stockee cote hebergeur suffit a
+// silencieusement bloquer TOUTES les requetes navigateur, sans que le serveur ne renvoie
+// d'erreur explicite).
+app.use(cors({ origin: true }));
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
