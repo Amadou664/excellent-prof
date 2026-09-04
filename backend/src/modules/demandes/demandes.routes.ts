@@ -18,5 +18,11 @@ router.patch("/:id/confirmer", requireRole("PROFESSEUR"), demandesController.con
 // Annulation : proprietaire (parent/etudiant/particulier proprietaire de l'eleve) ou ADMIN —
 // verifie dans demandes.service.annuler.
 router.patch("/:id/annuler", demandesController.annuler);
+router.patch("/:id/paiement", requireRole("ADMIN"), demandesController.updatePaiement);
+
+// Messagerie famille <-> professeur assigne : acces verifie dans messages.service (participant
+// de la demande, ou ADMIN).
+router.get("/:id/messages", demandesController.listMessages);
+router.post("/:id/messages", demandesController.createMessage);
 
 export default router;

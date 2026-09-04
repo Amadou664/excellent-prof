@@ -62,4 +62,9 @@ export function getFirebaseAuth(): admin.auth.Auth {
   return admin.auth();
 }
 
+export function getFirebaseMessaging(): admin.messaging.Messaging {
+  initFirebaseApp();
+  return admin.messaging();
+}
+
 export default admin;

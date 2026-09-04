@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../../config/prisma";
 import { ApiError } from "../../utils/apiError";
 import { toTeacherProfileResponse } from "../../utils/mappers";
+import { sendPushToUser } from "../../utils/push";
 import { z } from "zod";
 import { listTeachersQuerySchema, updateMyTeacherProfileSchema } from "./teachers.schemas";
 
@@ -76,6 +77,20 @@ export async function updateCandidature(
 
     return updatedProfile;
   });
+
+  if (statutCandidature === "VALIDEE") {
+    await sendPushToUser(
+      profile.userId,
+      "Candidature validee",
+      "Felicitations, votre candidature a ete validee ! Vous pouvez maintenant utiliser l'application."
+    );
+  } else if (statutCandidature === "REFUSEE") {
+    await sendPushToUser(
+      profile.userId,
+      "Candidature non retenue",
+      "Votre candidature n'a malheureusement pas ete retenue cette fois-ci."
+    );
+  }
 
   return toTeacherProfileResponse(updated, updated.user);
 }

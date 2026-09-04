@@ -2,6 +2,7 @@ import { User } from "@prisma/client";
 import { prisma } from "../../config/prisma";
 import { ApiError } from "../../utils/apiError";
 import { toAvisResponse } from "../../utils/mappers";
+import { sendPushToUser } from "../../utils/push";
 import { z } from "zod";
 import { createAvisSchema } from "./avis.schemas";
 
@@ -80,6 +81,13 @@ export async function updateStatut(id: string, statut: "VISIBLE" | "MASQUE") {
   }
   const updated = await prisma.avis.update({ where: { id }, data: { statut } });
   await recalculateTeacherRating(avis.professeurId);
+  if (statut === "VISIBLE") {
+    await sendPushToUser(
+      avis.professeurId,
+      "Nouvel avis",
+      "Un nouvel avis a ete publie sur votre profil."
+    );
+  }
   return toAvisResponse(updated);
 }
 

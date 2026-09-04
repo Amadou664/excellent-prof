@@ -125,6 +125,8 @@ model User {
   avisRecus  Avis[] @relation("AvisProfesseur")
   avisEcrits Avis[] @relation("AvisAuteur")
 
+  messagesEnvoyes Message[] @relation("MessageAuteur")
+
   @@index([role])
   @@index([status])
 }
@@ -181,10 +183,17 @@ model Demande {
   status      DemandeStatus @default(NOUVELLE)
   notes       String?
 
+  // Suivi de paiement manuel (pas de passerelle de paiement integree — voir rapport de
+  // livraison). Renseigne/bascule par un ADMIN via PATCH /demandes/:id/paiement, pour tracer les
+  // paiements recus hors application (especes, Orange Money, Wave...).
+  montant Int?
+  paye    Boolean @default(false)
+
   professeurId String?
   professeur   User?   @relation("DemandeProfesseur", fields: [professeurId], references: [id])
 
-  seances Seance[]
+  seances  Seance[]
+  messages Message[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -192,6 +201,34 @@ model Demande {
   @@index([status])
   @@index([professeurId])
   @@index([studentId])
+}
+
+// Messagerie minimale entre la famille et le professeur assigne, portee par une Demande (des
+// que professeurId est renseigne). Pas de temps reel (websocket) : le client recharge la liste
+// via GET /demandes/:id/messages.
+model Message {
+  id        String   @id @default(uuid())
+  demandeId String
+  demande   Demande  @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  auteurId  String
+  auteur    User     @relation("MessageAuteur", fields: [auteurId], references: [id], onDelete: Cascade)
+  contenu   String
+  createdAt DateTime @default(now())
+
+  @@index([demandeId])
+}
+
+// Fichiers uploades (photos de profil, diplomes...), stockes directement en base (Neon Postgres)
+// plutot que sur Firebase Storage : evite d'exiger une carte bancaire (palier Blaze) pour cette
+// fonctionnalite, et fonctionne identiquement sur mobile et sur le web. Servis via
+// GET /api/files/:id. A surveiller si le volume d'uploads grandit (palier gratuit Neon limite a
+// 0.5 Go au total).
+model Fichier {
+  id        String   @id @default(uuid())
+  filename  String
+  mimeType  String
+  data      Bytes
+  createdAt DateTime @default(now())
 }
 
 model Seance {

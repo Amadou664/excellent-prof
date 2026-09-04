@@ -1,12 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../models/enums.dart';
-import '../../../providers/firebase_providers.dart';
+import '../../../providers/repository_providers.dart';
 import '../../../widgets/app_button.dart';
 import '../../../widgets/app_text_field.dart';
 import '../../../widgets/inline_error_banner.dart';
@@ -75,16 +73,12 @@ class _RegisterTeacherScreenState extends ConsumerState<RegisterTeacherScreen> {
 
     setState(() => _isUploading = true);
     try {
-      // On utilise un identifiant temporaire tant que le compte Firebase
-      // n'existe pas encore : le nom du fichier suffit à éviter les
-      // collisions au sein de cette session d'inscription.
-      final tempUid = DateTime.now().millisecondsSinceEpoch.toString();
-      final storage = ref.read(storageServiceProvider);
-      final url = await storage.uploadDiplome(
-        uid: tempUid,
-        file: File(file.path),
-        fileName: file.name,
-      );
+      final bytes = await file.readAsBytes();
+      final url = await ref.read(fileRepositoryProvider).upload(
+            bytes: bytes,
+            filename: file.name,
+            mimeType: file.mimeType ?? 'image/jpeg',
+          );
       setState(() => _diplomes.add(_UploadedDiplome(name: file.name, url: url)));
     } catch (e) {
       if (mounted) {

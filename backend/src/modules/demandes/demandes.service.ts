@@ -2,8 +2,13 @@ import { Prisma, User } from "@prisma/client";
 import { prisma } from "../../config/prisma";
 import { ApiError } from "../../utils/apiError";
 import { toDemandeResponse } from "../../utils/mappers";
+import { sendPushToUser } from "../../utils/push";
 import { z } from "zod";
-import { createDemandeSchema, listDemandesQuerySchema } from "./demandes.schemas";
+import {
+  createDemandeSchema,
+  listDemandesQuerySchema,
+  updatePaiementSchema,
+} from "./demandes.schemas";
 
 async function assertStudentOwnedByUser(studentId: string, user: User) {
   const student = await prisma.student.findUnique({ where: { id: studentId } });
@@ -84,6 +89,13 @@ export async function assigner(demandeId: string, professeurId: string) {
     where: { id: demandeId },
     data: { professeurId, status: "PROF_PROPOSE" },
   });
+
+  await sendPushToUser(
+    professeurId,
+    "Nouvelle demande",
+    `Une demande de cours en ${updated.matiere} vous a ete proposee.`
+  );
+
   return toDemandeResponse(updated);
 }
 
@@ -110,7 +122,32 @@ export async function confirmer(demandeId: string, professeur: User, dateSeance?
     }),
   ]);
 
+  const student = await prisma.student.findUnique({ where: { id: updatedDemande.studentId } });
+  const familyOwnerId = student?.parentId ?? student?.userId;
+  if (familyOwnerId) {
+    await sendPushToUser(
+      familyOwnerId,
+      "Cours confirme",
+      `Le professeur a confirme votre demande en ${updatedDemande.matiere}.`
+    );
+  }
+
   return toDemandeResponse(updatedDemande);
+}
+
+export async function updatePaiement(
+  demandeId: string,
+  body: z.infer<typeof updatePaiementSchema>
+) {
+  await getDemandeOrThrow(demandeId);
+  const updated = await prisma.demande.update({
+    where: { id: demandeId },
+    data: {
+      paye: body.paye,
+      ...(body.montant !== undefined ? { montant: body.montant } : {}),
+    },
+  });
+  return toDemandeResponse(updated);
 }
 
 export async function annuler(demandeId: string, user: User) {

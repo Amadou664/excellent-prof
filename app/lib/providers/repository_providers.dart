@@ -7,6 +7,7 @@ import '../repositories/auth_repository.dart';
 import '../repositories/avis_repository.dart';
 import '../repositories/cours_pour_tous_repository.dart';
 import '../repositories/demande_repository.dart';
+import '../repositories/file_repository.dart';
 import '../repositories/seance_repository.dart';
 import '../repositories/student_repository.dart';
 import '../repositories/teacher_repository.dart';
@@ -52,4 +53,8 @@ final avisRepositoryProvider = Provider<AvisRepository>(
 
 final adminRepositoryProvider = Provider<AdminRepository>(
   (ref) => AdminRepository(ref.watch(apiClientProvider)),
+);
+
+final fileRepositoryProvider = Provider<FileRepository>(
+  (ref) => FileRepository(ref.watch(apiClientProvider)),
 );

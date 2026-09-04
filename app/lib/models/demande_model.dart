@@ -22,6 +22,10 @@ class DemandeModel {
   /// son absence.
   final String? notes;
 
+  /// Suivi de paiement manuel (voir `PATCH /demandes/:id/paiement`, ADMIN).
+  final int? montant;
+  final bool paye;
+
   const DemandeModel({
     required this.id,
     required this.studentId,
@@ -31,6 +35,8 @@ class DemandeModel {
     this.professeurId,
     required this.createdAt,
     this.notes,
+    this.montant,
+    this.paye = false,
   });
 
   factory DemandeModel.fromJson(Map<String, dynamic> json) {
@@ -45,6 +51,8 @@ class DemandeModel {
           DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
       notes: json['notes'] as String?,
+      montant: json['montant'] as int?,
+      paye: json['paye'] as bool? ?? false,
     );
   }
 

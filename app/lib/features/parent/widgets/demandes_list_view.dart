@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/router/app_routes.dart';
 import '../../../models/demande_model.dart';
 import '../../../models/enums.dart';
 import '../../../providers/demandes_provider.dart';
@@ -138,6 +140,13 @@ class _DemandeTile extends ConsumerWidget {
             Wrap(
               spacing: 8,
               children: [
+                if (demande.professeurId != null && demande.status != DemandeStatus.annulee)
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        context.push(AppRoutes.chatPath(demande.id)),
+                    icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                    label: const Text('Discuter'),
+                  ),
                 if (_peutEtreAnnulee)
                   OutlinedButton(
                     onPressed: () => _annuler(context, ref),

@@ -1,6 +1,7 @@
 import '../core/network/api_client.dart';
 import '../models/demande_model.dart';
 import '../models/enums.dart';
+import '../models/message_model.dart';
 
 /// Domaine `/demandes` (processus de réservation, voir API_CONTRACT.md).
 class DemandeRepository {
@@ -84,5 +85,45 @@ class DemandeRepository {
       () => _client.dio.patch('/demandes/$demandeId/annuler'),
     );
     return DemandeModel.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// `PATCH /demandes/:id/paiement` (ADMIN) — suivi de paiement manuel.
+  Future<DemandeModel> updatePaiement({
+    required String demandeId,
+    required bool paye,
+    int? montant,
+  }) async {
+    final data = await _client.unwrap(
+      () => _client.dio.patch(
+        '/demandes/$demandeId/paiement',
+        data: {'paye': paye, if (montant != null) 'montant': montant},
+      ),
+    );
+    return DemandeModel.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// `GET /demandes/:id/messages` — messagerie famille ↔ professeur assigné.
+  Future<List<MessageModel>> messages(String demandeId) async {
+    final data = await _client.unwrap(
+      () => _client.dio.get('/demandes/$demandeId/messages'),
+    );
+    final items = data as List<dynamic>;
+    return items
+        .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// `POST /demandes/:id/messages` body `{ contenu }`.
+  Future<MessageModel> sendMessage({
+    required String demandeId,
+    required String contenu,
+  }) async {
+    final data = await _client.unwrap(
+      () => _client.dio.post(
+        '/demandes/$demandeId/messages',
+        data: {'contenu': contenu},
+      ),
+    );
+    return MessageModel.fromJson(data as Map<String, dynamic>);
   }
 }

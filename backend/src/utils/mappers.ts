@@ -4,6 +4,7 @@ import {
   CahierDeTexte,
   CoursPourTous,
   Demande,
+  Message,
   Seance,
   Student,
   TeacherProfile,
@@ -77,7 +78,19 @@ export function toDemandeResponse(demande: Demande) {
     modePref: demande.modePref,
     status: demande.status,
     professeurId: demande.professeurId,
+    montant: demande.montant,
+    paye: demande.paye,
     createdAt: demande.createdAt.toISOString(),
+  };
+}
+
+export function toMessageResponse(message: Message) {
+  return {
+    id: message.id,
+    demandeId: message.demandeId,
+    auteurId: message.auteurId,
+    contenu: message.contenu,
+    createdAt: message.createdAt.toISOString(),
   };
 }
 

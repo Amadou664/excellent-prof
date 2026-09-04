@@ -129,9 +129,19 @@ class _DemandeAConfirmerTile extends ConsumerWidget {
       child: ListTile(
         title: Text(demande.matiere),
         subtitle: Text('Mode : ${demande.modePref.label}'),
-        trailing: ElevatedButton(
-          onPressed: () => _confirmer(context, ref),
-          child: const Text('Confirmer'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chat_bubble_outline),
+              tooltip: 'Discuter',
+              onPressed: () => context.push(AppRoutes.chatPath(demande.id)),
+            ),
+            ElevatedButton(
+              onPressed: () => _confirmer(context, ref),
+              child: const Text('Confirmer'),
+            ),
+          ],
         ),
       ),
     );
@@ -151,7 +161,17 @@ class _SeanceTile extends StatelessWidget {
       child: ListTile(
         title: Text(seance.matiere ?? 'Séance', style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text(dateLabel),
-        trailing: StatusChip.seanceStatut(seance.statut),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chat_bubble_outline),
+              tooltip: 'Discuter',
+              onPressed: () => context.push(AppRoutes.chatPath(seance.demandeId)),
+            ),
+            StatusChip.seanceStatut(seance.statut),
+          ],
+        ),
         onTap: () => context.push(AppRoutes.teacherCahierTexteEditPath(seance.id)),
       ),
     );

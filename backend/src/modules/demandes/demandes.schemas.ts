@@ -24,3 +24,9 @@ export const confirmerSchema = z
     dateSeance: z.coerce.date().optional(),
   })
   .optional();
+
+// Suivi de paiement manuel (ADMIN) — voir commentaire sur Demande.paye dans schema.prisma.
+export const updatePaiementSchema = z.object({
+  paye: z.boolean(),
+  montant: z.number().int().nonnegative().optional(),
+});

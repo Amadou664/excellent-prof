@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,6 +19,31 @@ class ExcellentProfApp extends ConsumerStatefulWidget {
 }
 
 class _ExcellentProfAppState extends ConsumerState<ExcellentProfApp> {
+  final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
+  @override
+  void initState() {
+    super.initState();
+    // Par défaut, FCM n'affiche automatiquement une notification système que
+    // lorsque l'app est en arrière-plan/fermée. Au premier plan, on affiche
+    // nous-mêmes un SnackBar pour ne pas perdre l'information (ex: nouveau
+    // message, demande assignée...).
+    FirebaseMessaging.onMessage.listen((message) {
+      final notification = message.notification;
+      if (notification == null) return;
+      _scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text(
+            [notification.title, notification.body]
+                .where((s) => s != null && s.isNotEmpty)
+                .join(' — '),
+          ),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     // Dès que le profil utilisateur complet est chargé, on synchronise le
@@ -37,6 +63,7 @@ class _ExcellentProfAppState extends ConsumerState<ExcellentProfApp> {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       routerConfig: router,
+      scaffoldMessengerKey: _scaffoldMessengerKey,
     );
   }
 }

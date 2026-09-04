@@ -6,8 +6,11 @@ import {
   confirmerSchema,
   createDemandeSchema,
   listDemandesQuerySchema,
+  updatePaiementSchema,
 } from "./demandes.schemas";
 import * as demandesService from "./demandes.service";
+import { createMessageSchema } from "../messages/messages.schemas";
+import * as messagesService from "../messages/messages.service";
 
 export const create = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
@@ -45,4 +48,23 @@ export const annuler = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
   const data = await demandesService.annuler(req.params.id, req.user);
   res.json({ data });
+});
+
+export const updatePaiement = asyncHandler(async (req: Request, res: Response) => {
+  const body = updatePaiementSchema.parse(req.body);
+  const data = await demandesService.updatePaiement(req.params.id, body);
+  res.json({ data });
+});
+
+export const listMessages = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const data = await messagesService.listMessages(req.params.id, req.user);
+  res.json({ data });
+});
+
+export const createMessage = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const body = createMessageSchema.parse(req.body);
+  const data = await messagesService.createMessage(req.params.id, req.user, body);
+  res.status(201).json({ data });
 });

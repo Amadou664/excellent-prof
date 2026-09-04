@@ -14,6 +14,7 @@ import '../../features/auth/screens/register_student_screen.dart';
 import '../../features/auth/screens/register_teacher_screen.dart';
 import '../../features/auth/screens/role_selection_screen.dart';
 import '../../features/auth/screens/splash_screen.dart';
+import '../../features/chat/screens/chat_screen.dart';
 import '../../features/cours_pour_tous/screens/cours_detail_screen.dart';
 import '../../features/cours_pour_tous/screens/cours_list_screen.dart';
 import '../../features/cours_pour_tous/screens/inscription_screen.dart';
@@ -209,6 +210,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.annonceDetail,
         builder: (context, state) => AnnonceDetailScreen(id: state.pathParameters['id']!),
+      ),
+
+      // --- Messagerie ---
+      GoRoute(
+        path: AppRoutes.chat,
+        builder: (context, state) => ChatScreen(
+          demandeId: state.pathParameters['demandeId']!,
+        ),
       ),
 
       // --- Cours pour tous ---
