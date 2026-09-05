@@ -1,6 +1,25 @@
 import '../core/network/api_client.dart';
 import '../models/enums.dart';
+import '../models/user_detail_model.dart';
 import '../models/user_model.dart';
+
+/// Une page de résultats `GET /users`, avec le total pour piloter la
+/// pagination côté UI (voir `GestionUtilisateurs`).
+class UserListPage {
+  final List<UserModel> items;
+  final int total;
+  final int page;
+  final int pageSize;
+
+  const UserListPage({
+    required this.items,
+    required this.total,
+    required this.page,
+    required this.pageSize,
+  });
+
+  bool get hasMore => page * pageSize < total;
+}
 
 /// Domaine `/users` (ADMIN uniquement, voir API_CONTRACT.md).
 class UserRepository {
@@ -9,7 +28,7 @@ class UserRepository {
   final ApiClient _client;
 
   /// `GET /users?role=&status=&q=` avec pagination `?page=&pageSize=`.
-  Future<List<UserModel>> list({
+  Future<UserListPage> list({
     Role? role,
     UserStatus? status,
     String? q,
@@ -28,11 +47,27 @@ class UserRepository {
         },
       ),
     );
-    final items = (data is Map<String, dynamic> ? data['items'] : data)
-        as List<dynamic>;
-    return items
+    if (data is Map<String, dynamic> && data.containsKey('items')) {
+      final items = (data['items'] as List<dynamic>)
+          .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+      return UserListPage(
+        items: items,
+        total: (data['total'] as num?)?.toInt() ?? items.length,
+        page: (data['page'] as num?)?.toInt() ?? page,
+        pageSize: (data['pageSize'] as num?)?.toInt() ?? pageSize,
+      );
+    }
+    final items = (data as List<dynamic>)
         .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
         .toList();
+    return UserListPage(items: items, total: items.length, page: 1, pageSize: items.length);
+  }
+
+  /// `GET /users/:id` — fiche détaillée (élèves, candidature, compteurs).
+  Future<UserDetailModel> getDetail(String id) async {
+    final data = await _client.unwrap(() => _client.dio.get('/users/$id'));
+    return UserDetailModel.fromJson(data as Map<String, dynamic>);
   }
 
   /// `PATCH /users/:id/status` body `{ "status": "UserStatus" }`.

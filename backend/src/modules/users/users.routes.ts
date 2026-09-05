@@ -11,6 +11,7 @@ router.patch("/me", verifyFirebaseToken, usersController.updateMe);
 router.use(verifyFirebaseToken, requireRole("ADMIN"));
 
 router.get("/", usersController.list);
+router.get("/:id", usersController.getDetail);
 router.patch("/:id/status", usersController.updateStatus);
 
 export default router;

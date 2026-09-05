@@ -22,3 +22,8 @@ export const updateMe = asyncHandler(async (req: Request, res: Response) => {
   const data = await usersService.updateMe(req.user.id, body);
   res.json({ data });
 });
+
+export const getDetail = asyncHandler(async (req: Request, res: Response) => {
+  const data = await usersService.getUserDetail(req.params.id);
+  res.json({ data });
+});

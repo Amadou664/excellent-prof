@@ -1,7 +1,11 @@
 import { Prisma, UserStatus } from "@prisma/client";
 import { prisma } from "../../config/prisma";
 import { ApiError } from "../../utils/apiError";
-import { toUserResponse } from "../../utils/mappers";
+import {
+  toStudentResponse,
+  toTeacherProfileResponse,
+  toUserResponse,
+} from "../../utils/mappers";
 import { z } from "zod";
 import { listUsersQuerySchema, updateMeSchema } from "./users.schemas";
 
@@ -50,4 +54,37 @@ export async function updateUserStatus(id: string, status: UserStatus) {
 export async function updateMe(userId: string, body: z.infer<typeof updateMeSchema>) {
   const updated = await prisma.user.update({ where: { id: userId }, data: body });
   return toUserResponse(updated);
+}
+
+/**
+ * Fiche detaillee d'un utilisateur (ADMIN) : profil de base + son
+ * teacherProfile (le cas echeant), ses eleves (rattaches en tant que
+ * parent/etudiant/particulier), et deux compteurs de demandes selon le role
+ * (famille -> demandes creees pour ses eleves ; professeur -> demandes qui
+ * lui ont ete assignees), pour eviter un aller-retour supplementaire cote
+ * app quand l'admin consulte ce profil.
+ */
+export async function getUserDetail(id: string) {
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) {
+    throw ApiError.notFound("Utilisateur introuvable");
+  }
+
+  const [teacherProfile, students, demandesCommeFamille, demandesCommeProf, avisRecus] =
+    await Promise.all([
+      prisma.teacherProfile.findUnique({ where: { userId: id } }),
+      prisma.student.findMany({ where: { OR: [{ parentId: id }, { userId: id }] } }),
+      prisma.demande.count({ where: { student: { OR: [{ parentId: id }, { userId: id }] } } }),
+      prisma.demande.count({ where: { professeurId: id } }),
+      prisma.avis.count({ where: { professeurId: id, statut: "VISIBLE" } }),
+    ]);
+
+  return {
+    ...toUserResponse(user),
+    teacherProfile: teacherProfile ? toTeacherProfileResponse(teacherProfile, user) : undefined,
+    students: students.map(toStudentResponse),
+    demandesCommeFamille,
+    demandesCommeProf,
+    avisRecus,
+  };
 }
