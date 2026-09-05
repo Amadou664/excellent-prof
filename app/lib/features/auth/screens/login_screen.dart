@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../providers/firebase_providers.dart';
 import '../../../widgets/app_button.dart';
 import '../../../widgets/app_text_field.dart';
@@ -86,7 +85,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 8),
-                const Icon(Icons.school, size: 56, color: AppColors.primaryGreen),
+                Center(child: Image.asset('assets/logo.png', height: 90)),
                 const SizedBox(height: 16),
                 const Text(
                   'Bon retour !',

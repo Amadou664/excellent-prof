@@ -53,13 +53,15 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 color: AppColors.primaryDarkGreen,
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.admin_panel_settings, color: AppColors.gold, size: 32),
-                    SizedBox(width: 12),
-                    Text(
-                      'Administration',
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    Image.asset('assets/logo.png', height: 40),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Administration',
+                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ],
                 ),

@@ -29,17 +29,7 @@ class RoleSelectionScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 16),
-              const Icon(Icons.school, color: AppColors.gold, size: 64),
-              const SizedBox(height: 12),
-              const Text(
-                "L'Excellent Prof",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Image.asset('assets/logo.png', height: 120),
               const SizedBox(height: 4),
               const Text(
                 'Cours particuliers au Mali',

@@ -17,16 +17,7 @@ class SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.school, color: AppColors.gold, size: 72),
-            const SizedBox(height: 16),
-            const Text(
-              "L'Excellent Prof",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            Image.asset('assets/logo.png', height: 140),
             const SizedBox(height: 32),
             const CircularProgressIndicator(color: AppColors.gold),
           ],
