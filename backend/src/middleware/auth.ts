@@ -42,6 +42,16 @@ export const verifyFirebaseToken = asyncHandler(
       );
     }
 
+    // Un token Firebase deja emis reste cryptographiquement valide jusqu'a son expiration
+    // naturelle (jusqu'a 1h) meme apres une suspension/desactivation cote admin : Firebase
+    // n'invalide pas les ID tokens deja distribues sans un appel explicite a
+    // revokeRefreshTokens + verification `checkRevoked`. On ferme ce trou ici, sans latence
+    // supplementaire (le statut est deja charge avec `user`) : un compte SUSPENDU/DESACTIVE est
+    // rejete immediatement, meme avec un token par ailleurs valide.
+    if (user.status === "SUSPENDU" || user.status === "DESACTIVE") {
+      throw ApiError.forbidden("Ce compte a ete suspendu ou desactive.", "ACCOUNT_DISABLED");
+    }
+
     req.user = user;
     next();
   }
