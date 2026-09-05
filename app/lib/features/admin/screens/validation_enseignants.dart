@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../models/enums.dart';
@@ -138,8 +139,27 @@ class _TeacherTile extends ConsumerWidget {
             const SizedBox(height: 6),
             Text(teacher.bio, maxLines: 3, overflow: TextOverflow.ellipsis),
             if (teacher.diplomesUrls.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text('${teacher.diplomesUrls.length} document(s) fourni(s)', style: const TextStyle(fontSize: 12)),
+              const SizedBox(height: 8),
+              Text(
+                '${teacher.diplomesUrls.length} document(s) fourni(s) :',
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(
+                  teacher.diplomesUrls.length,
+                  (i) => OutlinedButton.icon(
+                    onPressed: () => launchUrl(
+                      Uri.parse(teacher.diplomesUrls[i]),
+                      webOnlyWindowName: '_blank',
+                    ),
+                    icon: const Icon(Icons.description_outlined, size: 16),
+                    label: Text('Document ${i + 1}'),
+                  ),
+                ),
+              ),
             ],
             const SizedBox(height: 10),
             Wrap(

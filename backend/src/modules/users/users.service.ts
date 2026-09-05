@@ -3,7 +3,7 @@ import { prisma } from "../../config/prisma";
 import { ApiError } from "../../utils/apiError";
 import { toUserResponse } from "../../utils/mappers";
 import { z } from "zod";
-import { listUsersQuerySchema } from "./users.schemas";
+import { listUsersQuerySchema, updateMeSchema } from "./users.schemas";
 
 type ListUsersQuery = z.infer<typeof listUsersQuerySchema>;
 
@@ -44,5 +44,10 @@ export async function updateUserStatus(id: string, status: UserStatus) {
     throw ApiError.notFound("Utilisateur introuvable");
   }
   const updated = await prisma.user.update({ where: { id }, data: { status } });
+  return toUserResponse(updated);
+}
+
+export async function updateMe(userId: string, body: z.infer<typeof updateMeSchema>) {
+  const updated = await prisma.user.update({ where: { id: userId }, data: body });
   return toUserResponse(updated);
 }

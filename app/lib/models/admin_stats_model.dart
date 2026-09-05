@@ -7,10 +7,6 @@
 /// }
 /// ```
 ///
-/// Note (voir API_CONTRACT.md) : le chiffre d'affaires et le taux de
-/// fidélisation sont prévus mais leur calcul réel est hors scope tant que le
-/// paiement n'est pas défini côté backend -> ils sont donc modélisés ici
-/// comme optionnels et valent 0 par défaut (TODO backend/paiement).
 class AdminStatsModel {
   final int enseignantsValides;
   final int enseignantsEnAttente;
@@ -19,11 +15,12 @@ class AdminStatsModel {
   final int demandesEnCours;
   final int avisEnAttenteModeration;
 
-  /// TODO(backend/paiement) : toujours 0 tant que le module de paiement
-  /// n'est pas implémenté côté backend (voir API_CONTRACT.md, note finale).
+  /// Somme des `Demande.montant` marquées `paye` (voir suivi de paiement
+  /// manuel, `PATCH /demandes/:id/paiement`).
   final num chiffreAffaires;
 
-  /// TODO(backend/paiement) : idem, calcul réel hors scope pour l'instant.
+  /// Déjà exprimé en pourcentage (0-100) par le backend — ne PAS multiplier
+  /// par 100 à l'affichage.
   final double tauxFidelisation;
 
   const AdminStatsModel({
@@ -47,7 +44,6 @@ class AdminStatsModel {
       demandesEnCours: (json['demandesEnCours'] as num?)?.toInt() ?? 0,
       avisEnAttenteModeration:
           (json['avisEnAttenteModeration'] as num?)?.toInt() ?? 0,
-      // TODO(backend/paiement) : lire ces champs une fois exposés par l'API.
       chiffreAffaires: (json['chiffreAffaires'] as num?) ?? 0,
       tauxFidelisation:
           (json['tauxFidelisation'] as num?)?.toDouble() ?? 0.0,

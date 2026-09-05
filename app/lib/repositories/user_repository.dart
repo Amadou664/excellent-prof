@@ -48,4 +48,28 @@ class UserRepository {
     );
     return UserModel.fromJson(data as Map<String, dynamic>);
   }
+
+  /// `PATCH /users/me` — auto-édition de son propre profil (photo, téléphone,
+  /// ville, nom, prénom). Email/rôle/statut ne sont jamais modifiables ici.
+  Future<UserModel> updateMe({
+    String? photoUrl,
+    String? telephone,
+    String? ville,
+    String? nom,
+    String? prenom,
+  }) async {
+    final data = await _client.unwrap(
+      () => _client.dio.patch(
+        '/users/me',
+        data: {
+          if (photoUrl != null) 'photoUrl': photoUrl,
+          if (telephone != null) 'telephone': telephone,
+          if (ville != null) 'ville': ville,
+          if (nom != null) 'nom': nom,
+          if (prenom != null) 'prenom': prenom,
+        },
+      ),
+    );
+    return UserModel.fromJson(data as Map<String, dynamic>);
+  }
 }

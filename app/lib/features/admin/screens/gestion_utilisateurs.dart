@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../models/enums.dart';
 import '../../../models/user_model.dart';
 import '../../../providers/admin_provider.dart';
@@ -120,6 +121,26 @@ class _UserTile extends ConsumerWidget {
   final VoidCallback onChanged;
 
   Future<void> _changeStatus(BuildContext context, WidgetRef ref, UserStatus status) async {
+    if (status == UserStatus.suspendu || status == UserStatus.desactive) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('${status.label} ce compte ?'),
+          content: Text(
+            '${user.nomComplet} (${user.email}) sera immédiatement bloqué et ne pourra plus '
+            'utiliser l\'application, même s\'il est déjà connecté.',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(status.label, style: const TextStyle(color: AppColors.error)),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
     try {
       await ref.read(userRepositoryProvider).updateStatus(id: user.id, status: status);
       onChanged();

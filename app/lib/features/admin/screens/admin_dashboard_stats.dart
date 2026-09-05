@@ -7,10 +7,6 @@ import '../../../widgets/error_state.dart';
 import '../../../widgets/loading_indicator.dart';
 
 /// Dashboard de statistiques admin. `GET /admin/stats`.
-///
-/// `chiffreAffaires` et `tauxFidelisation` sont volontairement affichés à 0
-/// avec une mention explicite : voir API_CONTRACT.md ("calcul réel hors
-/// scope tant que le paiement n'est pas défini").
 class AdminDashboardStats extends ConsumerWidget {
   const AdminDashboardStats({super.key});
 
@@ -35,16 +31,16 @@ class AdminDashboardStats extends ConsumerWidget {
             _StatCardData('Demandes en cours', stats.demandesEnCours.toString(), Icons.assignment_outlined, AppColors.lightGreen),
             _StatCardData('Avis à modérer', stats.avisEnAttenteModeration.toString(), Icons.reviews_outlined, AppColors.error),
             _StatCardData(
-              "Chiffre d'affaires (TODO)",
+              "Chiffre d'affaires",
               '${stats.chiffreAffaires} FCFA',
               Icons.payments_outlined,
-              AppColors.textSecondary,
+              AppColors.primaryDarkGreen,
             ),
             _StatCardData(
-              'Taux de fidélisation (TODO)',
-              '${(stats.tauxFidelisation * 100).toStringAsFixed(0)} %',
+              'Taux de fidélisation',
+              '${stats.tauxFidelisation.toStringAsFixed(0)} %',
               Icons.loop,
-              AppColors.textSecondary,
+              AppColors.info,
             ),
           ];
           return GridView.builder(

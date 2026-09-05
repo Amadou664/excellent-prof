@@ -12,3 +12,13 @@ export const listUsersQuerySchema = z.object({
 export const updateUserStatusSchema = z.object({
   status: z.nativeEnum(UserStatus),
 });
+
+// Auto-edition de profil : email/role/status restent exclusivement geres par Firebase Auth /
+// l'ADMIN, jamais modifiables par l'utilisateur lui-meme.
+export const updateMeSchema = z.object({
+  photoUrl: z.string().url().optional(),
+  telephone: z.string().min(1).optional(),
+  ville: z.string().min(1).optional(),
+  nom: z.string().min(1).optional(),
+  prenom: z.string().min(1).optional(),
+});

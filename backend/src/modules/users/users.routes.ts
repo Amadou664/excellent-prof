@@ -4,6 +4,10 @@ import * as usersController from "./users.controller";
 
 const router = Router();
 
+// Auto-edition de son propre profil (avant le gate ADMIN ci-dessous, qui ne s'applique qu'aux
+// routes de gestion des AUTRES utilisateurs).
+router.patch("/me", verifyFirebaseToken, usersController.updateMe);
+
 router.use(verifyFirebaseToken, requireRole("ADMIN"));
 
 router.get("/", usersController.list);
