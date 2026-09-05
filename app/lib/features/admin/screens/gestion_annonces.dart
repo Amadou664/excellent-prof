@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../models/annonce_model.dart';
@@ -119,7 +120,33 @@ class _AnnonceFormSheetState extends ConsumerState<_AnnonceFormSheet> {
   late AnnonceType _type;
   late Visibilite _visibilite;
   bool _isSaving = false;
+  bool _isUploadingImage = false;
   String? _errorMessage;
+
+  Future<void> _pickAndUploadImage() async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (file == null) return;
+
+    setState(() => _isUploadingImage = true);
+    try {
+      final bytes = await file.readAsBytes();
+      final url = await ref.read(fileRepositoryProvider).upload(
+            bytes: bytes,
+            filename: file.name,
+            mimeType: file.mimeType ?? 'image/jpeg',
+          );
+      setState(() => _imageUrlController.text = url);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Échec de l'envoi de l'image. Réessayez.")),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingImage = false);
+    }
+  }
 
   @override
   void initState() {
@@ -211,6 +238,18 @@ class _AnnonceFormSheetState extends ConsumerState<_AnnonceFormSheet> {
             AppTextField(
               label: "URL de l'image (optionnel)",
               controller: _imageUrlController,
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _isUploadingImage ? null : _pickAndUploadImage,
+              icon: _isUploadingImage
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.upload_file),
+              label: Text(_isUploadingImage ? 'Envoi en cours...' : 'Importer une image'),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<AnnonceType>(
