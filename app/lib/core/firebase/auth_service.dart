@@ -49,6 +49,28 @@ class AuthService {
 
   Future<void> signOut() => _firebaseAuth.signOut();
 
+  /// Ré-authentifie l'utilisateur courant avec son mot de passe actuel.
+  /// Firebase l'exige avant toute opération sensible (ici : changement de
+  /// mot de passe) si la session est un peu ancienne
+  /// (`requires-recent-login`).
+  Future<void> reauthenticate(String currentPassword) async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null || user.email == null) return;
+    final credential = EmailAuthProvider.credential(
+      email: user.email!,
+      password: currentPassword,
+    );
+    await user.reauthenticateWithCredential(credential);
+  }
+
+  /// Change le mot de passe de l'utilisateur courant. À appeler juste après
+  /// [reauthenticate] pour éviter un `requires-recent-login`.
+  Future<void> updatePassword(String newPassword) async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null) return;
+    await user.updatePassword(newPassword);
+  }
+
   /// Supprime le compte Firebase courant. Utilisé pour "annuler" une
   /// inscription si la création du profil côté backend échoue après la
   /// création du compte Firebase (évite un compte Firebase orphelin).

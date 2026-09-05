@@ -5,6 +5,7 @@ import {
   CoursPourTous,
   Demande,
   Message,
+  Notification,
   Seance,
   Student,
   TeacherProfile,
@@ -81,6 +82,16 @@ export function toDemandeResponse(demande: Demande) {
     montant: demande.montant,
     paye: demande.paye,
     createdAt: demande.createdAt.toISOString(),
+  };
+}
+
+export function toNotificationResponse(notification: Notification) {
+  return {
+    id: notification.id,
+    titre: notification.titre,
+    corps: notification.corps,
+    lue: notification.lue,
+    createdAt: notification.createdAt.toISOString(),
   };
 }
 

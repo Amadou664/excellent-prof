@@ -15,6 +15,7 @@ import coursPourTousRoutes from "./modules/coursPourTous/coursPourTous.routes";
 import avisRoutes from "./modules/avis/avis.routes";
 import adminStatsRoutes from "./modules/admin/stats.routes";
 import filesRoutes from "./modules/files/files.routes";
+import notificationsRoutes from "./modules/notifications/notifications.routes";
 
 const app = express();
 
@@ -72,6 +73,7 @@ app.use("/api/cours-pour-tous", coursPourTousRoutes);
 app.use("/api/avis", avisRoutes);
 app.use("/api/admin", adminStatsRoutes);
 app.use("/api/files", filesRoutes);
+app.use("/api/notifications", notificationsRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: { code: "NOT_FOUND", message: `Route inconnue: ${req.method} ${req.path}` } });

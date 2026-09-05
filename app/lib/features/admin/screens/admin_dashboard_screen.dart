@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../providers/firebase_providers.dart';
+import '../../../widgets/notification_bell_button.dart';
 import 'admin_dashboard_stats.dart';
 import 'attribution_demandes.dart';
 import 'gestion_annonces.dart';
@@ -44,7 +45,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_sections[_index].title)),
+      appBar: AppBar(
+        title: Text(_sections[_index].title),
+        actions: const [NotificationBellButton()],
+      ),
       drawer: Drawer(
         child: SafeArea(
           child: Column(

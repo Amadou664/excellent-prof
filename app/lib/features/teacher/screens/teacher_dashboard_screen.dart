@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/auth_providers.dart';
 import '../../../widgets/error_state.dart';
 import '../../../widgets/loading_indicator.dart';
+import '../../../widgets/notification_bell_button.dart';
 import '../../../widgets/profile_summary_tab.dart';
 import 'disponibilites_screen.dart';
 import 'mes_eleves_screen.dart';
@@ -28,7 +29,10 @@ class _TeacherDashboardScreenState extends ConsumerState<TeacherDashboardScreen>
     final userAsync = ref.watch(currentUserProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(_titles[_index])),
+      appBar: AppBar(
+        title: Text(_titles[_index]),
+        actions: const [NotificationBellButton()],
+      ),
       body: IndexedStack(
         index: _index,
         children: [

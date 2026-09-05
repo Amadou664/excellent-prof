@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,6 +9,9 @@ import '../models/user_model.dart';
 import '../providers/auth_providers.dart';
 import '../providers/firebase_providers.dart';
 import '../providers/repository_providers.dart';
+import 'app_button.dart';
+import 'app_text_field.dart';
+import 'inline_error_banner.dart';
 import 'status_chip.dart';
 
 /// Onglet "Profil" générique réutilisé par les dashboards Parent, Professeur
@@ -51,6 +55,22 @@ class _ProfileSummaryTabState extends ConsumerState<ProfileSummaryTab> {
     } finally {
       if (mounted) setState(() => _isUploadingPhoto = false);
     }
+  }
+
+  void _openChangePassword() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        ),
+        child: const _ChangePasswordSheet(),
+      ),
+    );
   }
 
   @override
@@ -121,12 +141,119 @@ class _ProfileSummaryTabState extends ConsumerState<ProfileSummaryTab> {
         ],
         const SizedBox(height: 24),
         OutlinedButton.icon(
+          onPressed: _openChangePassword,
+          icon: const Icon(Icons.lock_reset_outlined),
+          label: const Text('Changer le mot de passe'),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
           onPressed: () => ref.read(authServiceProvider).signOut(),
           icon: const Icon(Icons.logout, color: AppColors.error),
           label: const Text('Se déconnecter', style: TextStyle(color: AppColors.error)),
           style: OutlinedButton.styleFrom(side: const BorderSide(color: AppColors.error)),
         ),
       ],
+    );
+  }
+}
+
+class _ChangePasswordSheet extends ConsumerStatefulWidget {
+  const _ChangePasswordSheet();
+
+  @override
+  ConsumerState<_ChangePasswordSheet> createState() => _ChangePasswordSheetState();
+}
+
+class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _currentController = TextEditingController();
+  final _newController = TextEditingController();
+  final _confirmController = TextEditingController();
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _currentController.dispose();
+    _newController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    final authService = ref.read(authServiceProvider);
+    try {
+      await authService.reauthenticate(_currentController.text);
+      await authService.updatePassword(_newController.text);
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Mot de passe mis à jour.')),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      setState(() => _errorMessage = authService.messageFromException(e));
+    } catch (_) {
+      setState(() => _errorMessage = 'Une erreur inattendue est survenue.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Changer le mot de passe',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          if (_errorMessage != null) ...[
+            InlineErrorBanner(message: _errorMessage!),
+            const SizedBox(height: 16),
+          ],
+          AppTextField(
+            label: 'Mot de passe actuel',
+            controller: _currentController,
+            obscureText: true,
+            prefixIcon: Icons.lock_outline,
+            validator: (v) => v == null || v.isEmpty ? 'Champ requis' : null,
+          ),
+          const SizedBox(height: 16),
+          AppTextField(
+            label: 'Nouveau mot de passe',
+            controller: _newController,
+            obscureText: true,
+            prefixIcon: Icons.lock_outline,
+            validator: (v) => v == null || v.length < 6 ? '6 caractères minimum' : null,
+          ),
+          const SizedBox(height: 16),
+          AppTextField(
+            label: 'Confirmer le nouveau mot de passe',
+            controller: _confirmController,
+            obscureText: true,
+            prefixIcon: Icons.lock_outline,
+            validator: (v) =>
+                v != _newController.text ? 'Les mots de passe ne correspondent pas' : null,
+          ),
+          const SizedBox(height: 20),
+          AppButton(
+            label: 'Valider',
+            isLoading: _isLoading,
+            onPressed: _submit,
+          ),
+        ],
+      ),
     );
   }
 }

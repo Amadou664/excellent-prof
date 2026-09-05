@@ -6,6 +6,7 @@ import '../../../core/router/app_routes.dart';
 import '../../../providers/auth_providers.dart';
 import '../../../widgets/error_state.dart';
 import '../../../widgets/loading_indicator.dart';
+import '../../../widgets/notification_bell_button.dart';
 import '../../../widgets/profile_summary_tab.dart';
 import '../../parent/widgets/demandes_list_view.dart';
 import 'mon_cahier_texte_screen.dart';
@@ -29,7 +30,10 @@ class _LearnerDashboardScreenState extends ConsumerState<LearnerDashboardScreen>
     final userAsync = ref.watch(currentUserProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(_titles[_index])),
+      appBar: AppBar(
+        title: Text(_titles[_index]),
+        actions: const [NotificationBellButton()],
+      ),
       body: IndexedStack(
         index: _index,
         children: [

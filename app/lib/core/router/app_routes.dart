@@ -49,6 +49,9 @@ class AppRoutes {
 
   static String annonceDetailPath(String id) => '/annonces/$id';
 
+  // --- Notifications ---
+  static const String notifications = '/notifications';
+
   // --- Messagerie (famille <-> professeur assigné) ---
   static const String chat = '/chat/:demandeId';
 

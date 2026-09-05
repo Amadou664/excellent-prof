@@ -126,6 +126,7 @@ model User {
   avisEcrits Avis[] @relation("AvisAuteur")
 
   messagesEnvoyes Message[] @relation("MessageAuteur")
+  notifications   Notification[]
 
   @@index([role])
   @@index([status])
@@ -223,6 +224,22 @@ model Message {
 // fonctionnalite, et fonctionne identiquement sur mobile et sur le web. Servis via
 // GET /api/files/:id. A surveiller si le volume d'uploads grandit (palier gratuit Neon limite a
 // 0.5 Go au total).
+// Historique persiste des notifications envoyees (voir utils/push.ts) : la notification push
+// elle-meme est ephemere (rien a voir si l'utilisateur etait hors ligne ou a balaye la
+// notification systeme) ; cette table permet un vrai centre de notifications dans l'app.
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  titre     String
+  corps     String
+  lue       Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, lue])
+}
+
 model Fichier {
   id        String   @id @default(uuid())
   filename  String
