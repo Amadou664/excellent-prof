@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { env } from "./config/env";
 import { errorHandler } from "./middleware/errorHandler";
@@ -23,6 +24,14 @@ const app = express();
 // lisent la vraie IP cliente via `X-Forwarded-For` plutot que l'IP du proxy (qui serait alors
 // partagee par tous les visiteurs et ferait declencher les limites ci-dessous a tort).
 app.set("trust proxy", 1);
+
+// Durcit une serie d'en-tetes HTTP par defaut (anti-clickjacking, desactive le sniffing MIME,
+// cache le "X-Powered-By: Express" qui renseignait un attaquant sur la stack utilisee, HSTS,
+// etc.). `crossOriginResourcePolicy` doit rester "cross-origin" : le front (excellent-prof.web.app)
+// et l'API (excellent-prof-backend.onrender.com) sont sur des domaines differents, et les images
+// (photos de profil, diplomes) servies par /api/files doivent pouvoir etre chargees depuis le
+// front — le defaut "same-origin" de Helmet les bloquerait silencieusement.
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
 // L'authentification se fait via un token Firebase en en-tete `Authorization: Bearer`, jamais
 // via cookie : un CORS ouvert n'expose donc pas de risque CSRF ici. On reflete systematiquement
