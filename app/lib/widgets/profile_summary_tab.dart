@@ -30,6 +30,36 @@ class ProfileSummaryTab extends ConsumerStatefulWidget {
 
 class _ProfileSummaryTabState extends ConsumerState<ProfileSummaryTab> {
   bool _isUploadingPhoto = false;
+  bool? _emailVerified;
+  bool _isResendingVerification = false;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.read(authServiceProvider).reloadAndCheckEmailVerified().then((verified) {
+      if (mounted) setState(() => _emailVerified = verified);
+    });
+  }
+
+  Future<void> _resendVerificationEmail() async {
+    setState(() => _isResendingVerification = true);
+    try {
+      await ref.read(authServiceProvider).sendEmailVerification();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email de confirmation renvoyé. Vérifiez votre boîte mail.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Échec de l'envoi. Réessayez dans quelques minutes.")),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isResendingVerification = false);
+    }
+  }
 
   Future<void> _changePhoto() async {
     final picker = ImagePicker();
@@ -183,6 +213,32 @@ class _ProfileSummaryTabState extends ConsumerState<ProfileSummaryTab> {
             child: StatusChip.userStatus(user.status),
           ),
         ),
+        if (_emailVerified == false) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.paleGold,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.mark_email_unread_outlined, color: AppColors.primaryDarkGreen),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Email non confirmé. Vérifiez votre boîte mail.',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _isResendingVerification ? null : _resendVerificationEmail,
+                  child: Text(_isResendingVerification ? '...' : 'Renvoyer'),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 24),
         _InfoTile(icon: Icons.email_outlined, label: 'Email', value: user.email),
         _InfoTile(icon: Icons.phone_outlined, label: 'Téléphone', value: user.telephone),

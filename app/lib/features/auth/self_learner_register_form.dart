@@ -6,6 +6,7 @@ import '../../models/enums.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_text_field.dart';
 import '../../widgets/inline_error_banner.dart';
+import '../../widgets/terms_acceptance_checkbox.dart';
 import 'register_helper.dart';
 
 /// Formulaire d'inscription partagé par "Je suis étudiant" et "Je suis
@@ -45,6 +46,7 @@ class _SelfLearnerRegisterFormState extends ConsumerState<SelfLearnerRegisterFor
 
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _acceptedTerms = false;
   String? _errorMessage;
 
   @override
@@ -95,6 +97,7 @@ class _SelfLearnerRegisterFormState extends ConsumerState<SelfLearnerRegisterFor
         'programme': _programme.apiValue,
         'dateNaissance': _dateNaissance!.toIso8601String(),
       },
+      acceptedTerms: _acceptedTerms,
       onError: (message) {
         if (mounted) setState(() => _errorMessage = message);
       },
@@ -215,7 +218,12 @@ class _SelfLearnerRegisterFormState extends ConsumerState<SelfLearnerRegisterFor
                     return null;
                   },
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+                TermsAcceptanceCheckbox(
+                  value: _acceptedTerms,
+                  onChanged: (v) => setState(() => _acceptedTerms = v),
+                ),
+                const SizedBox(height: 8),
                 AppButton(
                   label: 'Créer mon compte',
                   isLoading: _isLoading,

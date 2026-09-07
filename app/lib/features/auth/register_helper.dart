@@ -25,8 +25,14 @@ Future<UserModel?> runRegistrationFlow({
   required String ville,
   Map<String, dynamic>? teacherProfile,
   Map<String, dynamic>? studentSelf,
+  required bool acceptedTerms,
   required void Function(String message) onError,
 }) async {
+  if (!acceptedTerms) {
+    onError("Vous devez accepter les conditions d'utilisation et la politique de confidentialité.");
+    return null;
+  }
+
   final authService = ref.read(authServiceProvider);
   final authRepo = ref.read(authRepositoryProvider);
 
@@ -66,6 +72,12 @@ Future<UserModel?> runRegistrationFlow({
       studentSelf: studentSelf,
     );
     ref.invalidate(currentUserProvider);
+    try {
+      await authService.sendEmailVerification();
+    } catch (_) {
+      // Best-effort : l'utilisateur pourra toujours redemander l'email
+      // depuis son profil, on ne bloque jamais l'inscription pour ça.
+    }
     return user;
   } on ApiException catch (e) {
     onError(e.message);

@@ -47,6 +47,24 @@ class AuthService {
     return _firebaseAuth.sendPasswordResetEmail(email: email);
   }
 
+  /// Envoie l'email de confirmation d'adresse. Best-effort : appelé juste
+  /// après la création du compte, ne doit jamais bloquer l'inscription si
+  /// Firebase échoue à l'envoyer.
+  Future<void> sendEmailVerification() async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null || user.emailVerified) return;
+    await user.sendEmailVerification();
+  }
+
+  /// Recharge l'utilisateur courant depuis Firebase pour obtenir la dernière
+  /// valeur de `emailVerified` (le SDK ne la met pas à jour automatiquement).
+  Future<bool> reloadAndCheckEmailVerified() async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null) return false;
+    await user.reload();
+    return _firebaseAuth.currentUser?.emailVerified ?? false;
+  }
+
   Future<void> signOut() => _firebaseAuth.signOut();
 
   /// Ré-authentifie l'utilisateur courant avec son mot de passe actuel.

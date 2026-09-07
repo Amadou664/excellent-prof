@@ -8,6 +8,7 @@ import '../../../providers/repository_providers.dart';
 import '../../../widgets/app_button.dart';
 import '../../../widgets/app_text_field.dart';
 import '../../../widgets/inline_error_banner.dart';
+import '../../../widgets/terms_acceptance_checkbox.dart';
 import '../register_helper.dart';
 
 /// Formulaire d'inscription "Je suis professeur".
@@ -45,6 +46,7 @@ class _RegisterTeacherScreenState extends ConsumerState<RegisterTeacherScreen> {
   bool _isUploading = false;
   bool _isUploadingId = false;
   bool _obscurePassword = true;
+  bool _acceptedTerms = false;
   String? _errorMessage;
 
   @override
@@ -152,6 +154,7 @@ class _RegisterTeacherScreenState extends ConsumerState<RegisterTeacherScreen> {
         'diplomesUrls': _diplomes.map((d) => d.url).toList(),
         'pieceIdentiteUrl': _pieceIdentiteUrl,
       },
+      acceptedTerms: _acceptedTerms,
       onError: (message) {
         if (mounted) setState(() => _errorMessage = message);
       },
@@ -354,7 +357,12 @@ class _RegisterTeacherScreenState extends ConsumerState<RegisterTeacherScreen> {
                         : const Icon(Icons.upload_file),
                     label: Text(_isUploadingId ? 'Envoi en cours...' : "Ajouter ma pièce d'identité"),
                   ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+                TermsAcceptanceCheckbox(
+                  value: _acceptedTerms,
+                  onChanged: (v) => setState(() => _acceptedTerms = v),
+                ),
+                const SizedBox(height: 8),
                 AppButton(
                   label: 'Envoyer ma candidature',
                   isLoading: _isLoading,

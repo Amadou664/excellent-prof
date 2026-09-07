@@ -2,6 +2,7 @@ import { User } from "@prisma/client";
 import { prisma } from "../../config/prisma";
 import { ApiError } from "../../utils/apiError";
 import { toSignalementResponse } from "../../utils/mappers";
+import { sendPushToUser } from "../../utils/push";
 import { z } from "zod";
 import { createSignalementSchema } from "./signalements.schemas";
 
@@ -40,6 +41,18 @@ export async function createSignalement(
       motif: body.motif,
     },
   });
+
+  const admins = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true } });
+  await Promise.all(
+    admins.map((admin) =>
+      sendPushToUser(
+        admin.id,
+        "Nouveau signalement",
+        `${auteur.prenom} ${auteur.nom} a signalé un utilisateur. Examinez-le dans l'espace admin.`
+      )
+    )
+  );
+
   return toSignalementResponse(signalement);
 }
 

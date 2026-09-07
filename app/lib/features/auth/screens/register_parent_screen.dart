@@ -5,6 +5,7 @@ import '../../../models/enums.dart';
 import '../../../widgets/app_button.dart';
 import '../../../widgets/app_text_field.dart';
 import '../../../widgets/inline_error_banner.dart';
+import '../../../widgets/terms_acceptance_checkbox.dart';
 import '../register_helper.dart';
 
 /// Formulaire d'inscription "Je suis parent d'élève".
@@ -30,6 +31,7 @@ class _RegisterParentScreenState extends ConsumerState<RegisterParentScreen> {
 
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _acceptedTerms = false;
   String? _errorMessage;
 
   @override
@@ -59,6 +61,7 @@ class _RegisterParentScreenState extends ConsumerState<RegisterParentScreen> {
       prenom: _prenomController.text.trim(),
       telephone: _telephoneController.text.trim(),
       ville: _villeController.text.trim(),
+      acceptedTerms: _acceptedTerms,
       onError: (message) {
         if (mounted) setState(() => _errorMessage = message);
       },
@@ -152,7 +155,12 @@ class _RegisterParentScreenState extends ConsumerState<RegisterParentScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+                TermsAcceptanceCheckbox(
+                  value: _acceptedTerms,
+                  onChanged: (v) => setState(() => _acceptedTerms = v),
+                ),
+                const SizedBox(height: 8),
                 AppButton(
                   label: "Créer mon compte",
                   isLoading: _isLoading,
