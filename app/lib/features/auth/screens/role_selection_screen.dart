@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
@@ -112,6 +113,33 @@ class RoleSelectionScreen extends ConsumerWidget {
                   TextButton(
                     onPressed: () => context.push(AppRoutes.coursPourTous),
                     child: const Text('Cours pour tous', style: TextStyle(color: Colors.white70)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 16,
+                children: [
+                  TextButton(
+                    onPressed: () => launchUrl(
+                      Uri.parse('https://excellent-prof.web.app/confidentialite.html'),
+                      webOnlyWindowName: '_blank',
+                    ),
+                    child: const Text(
+                      'Confidentialité',
+                      style: TextStyle(color: Colors.white38, fontSize: 12),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => launchUrl(
+                      Uri.parse('https://excellent-prof.web.app/conditions.html'),
+                      webOnlyWindowName: '_blank',
+                    ),
+                    child: const Text(
+                      "Conditions d'utilisation",
+                      style: TextStyle(color: Colors.white38, fontSize: 12),
+                    ),
                   ),
                 ],
               ),
