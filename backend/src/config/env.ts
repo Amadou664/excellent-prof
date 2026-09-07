@@ -24,6 +24,16 @@ export const env = {
   firebaseProjectId: readString("FIREBASE_PROJECT_ID"),
   firebaseClientEmail: readString("FIREBASE_CLIENT_EMAIL"),
   firebasePrivateKey: readString("FIREBASE_PRIVATE_KEY"),
+
+  // Paiement en ligne (CinetPay) — voir src/modules/paiements. Tant que ces deux valeurs ne sont
+  // pas renseignees (compte marchand pas encore cree), `POST /paiements/initier` repond une
+  // erreur claire plutot que de planter : le reste de l'app continue de fonctionner normalement.
+  cinetpayApiKey: readString("CINETPAY_API_KEY"),
+  cinetpaySiteId: readString("CINETPAY_SITE_ID"),
+
+  // URLs publiques utilisees pour construire notify_url/return_url envoyes a CinetPay.
+  backendPublicUrl: readString("BACKEND_PUBLIC_URL", "https://excellent-prof-backend.onrender.com"),
+  webPublicUrl: readString("WEB_PUBLIC_URL", "https://excellent-prof.web.app"),
 };
 
 export const isProduction = env.nodeEnv === "production";

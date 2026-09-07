@@ -9,6 +9,7 @@ import '../repositories/cours_pour_tous_repository.dart';
 import '../repositories/demande_repository.dart';
 import '../repositories/file_repository.dart';
 import '../repositories/notification_repository.dart';
+import '../repositories/paiement_repository.dart';
 import '../repositories/seance_repository.dart';
 import '../repositories/signalement_repository.dart';
 import '../repositories/student_repository.dart';
@@ -67,4 +68,8 @@ final notificationRepositoryProvider = Provider<NotificationRepository>(
 
 final signalementRepositoryProvider = Provider<SignalementRepository>(
   (ref) => SignalementRepository(ref.watch(apiClientProvider)),
+);
+
+final paiementRepositoryProvider = Provider<PaiementRepository>(
+  (ref) => PaiementRepository(ref.watch(apiClientProvider)),
 );

@@ -18,6 +18,7 @@ import adminStatsRoutes from "./modules/admin/stats.routes";
 import filesRoutes from "./modules/files/files.routes";
 import notificationsRoutes from "./modules/notifications/notifications.routes";
 import signalementsRoutes from "./modules/signalements/signalements.routes";
+import paiementsRoutes from "./modules/paiements/paiements.routes";
 import { prisma } from "./config/prisma";
 
 const app = express();
@@ -43,6 +44,9 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 // d'erreur explicite).
 app.use(cors({ origin: true }));
 app.use(express.json());
+// CinetPay poste son webhook en application/x-www-form-urlencoded (voir modules/paiements) : le
+// corps JSON seul ne le parserait pas.
+app.use(express.urlencoded({ extended: true }));
 
 // Limite globale anti-abus (ex: scraping massif, bourrinage generique). Volontairement large
 // pour ne jamais gener un usage normal.
@@ -96,6 +100,7 @@ app.use("/api/admin", adminStatsRoutes);
 app.use("/api/files", filesRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/signalements", signalementsRoutes);
+app.use("/api/paiements", paiementsRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: { code: "NOT_FOUND", message: `Route inconnue: ${req.method} ${req.path}` } });

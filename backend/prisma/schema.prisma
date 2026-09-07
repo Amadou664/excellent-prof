@@ -98,6 +98,12 @@ enum SignalementStatut {
   TRAITE
 }
 
+enum PaiementStatut {
+  EN_ATTENTE
+  REUSSI
+  ECHOUE
+}
+
 // ---------------------------------------------------------------------------
 // Modeles
 // ---------------------------------------------------------------------------
@@ -208,8 +214,9 @@ model Demande {
   professeurId String?
   professeur   User?   @relation("DemandeProfesseur", fields: [professeurId], references: [id])
 
-  seances  Seance[]
-  messages Message[]
+  seances   Seance[]
+  messages  Message[]
+  paiements Paiement[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -271,6 +278,26 @@ model Signalement {
 
   @@index([statut])
   @@index([cibleId])
+}
+
+// Paiement en ligne d'une Demande via CinetPay (Orange Money / Moov Money / carte). Une Demande
+// peut avoir plusieurs Paiement (tentative echouee puis reussie) : `transactionId` identifie
+// chaque tentative aupres de CinetPay, `Demande.paye` ne bascule a true que sur un statut REUSSI
+// confirme par l'API de verification (jamais sur la seule foi du webhook, voir paiements.service.ts).
+model Paiement {
+  id            String         @id @default(uuid())
+  demandeId     String
+  demande       Demande        @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  transactionId String         @unique
+  montant       Int
+  devise        String         @default("XOF")
+  statut        PaiementStatut @default(EN_ATTENTE)
+  moyenPaiement String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([demandeId])
+  @@index([statut])
 }
 
 model Fichier {

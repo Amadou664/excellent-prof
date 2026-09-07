@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/router/app_routes.dart';
 import '../../../models/demande_model.dart';
@@ -42,11 +43,14 @@ class DemandesListView extends ConsumerWidget {
           );
         }
         final sorted = [...demandes]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: sorted.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 12),
-          itemBuilder: (context, index) => _DemandeTile(demande: sorted[index]),
+        return RefreshIndicator(
+          onRefresh: () async => ref.invalidate(demandesMineProvider),
+          child: ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: sorted.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            itemBuilder: (context, index) => _DemandeTile(demande: sorted[index]),
+          ),
         );
       },
     );
@@ -78,6 +82,29 @@ class _DemandeTile extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Impossible d'annuler la demande.")),
+        );
+      }
+    }
+  }
+
+  Future<void> _payer(BuildContext context, WidgetRef ref) async {
+    try {
+      final paymentUrl = await ref.read(paiementRepositoryProvider).initier(demandeId: demande.id);
+      await launchUrl(Uri.parse(paymentUrl), mode: LaunchMode.externalApplication);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Terminez le paiement dans la page ouverte, puis revenez ici et tirez vers le bas pour actualiser.',
+            ),
+            duration: Duration(seconds: 6),
+          ),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Impossible de lancer le paiement. Réessayez.")),
         );
       }
     }
@@ -136,6 +163,25 @@ class _DemandeTile extends ConsumerWidget {
               const SizedBox(height: 6),
               Text(demande.notes!),
             ],
+            if (demande.montant != null) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(
+                    demande.paye ? Icons.check_circle : Icons.pending_outlined,
+                    size: 16,
+                    color: demande.paye ? Colors.green : Colors.orange,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    demande.paye
+                        ? '${demande.montant} FCFA payé'
+                        : '${demande.montant} FCFA à payer',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
@@ -146,6 +192,14 @@ class _DemandeTile extends ConsumerWidget {
                         context.push(AppRoutes.chatPath(demande.id)),
                     icon: const Icon(Icons.chat_bubble_outline, size: 18),
                     label: const Text('Discuter'),
+                  ),
+                if (demande.montant != null &&
+                    !demande.paye &&
+                    demande.status != DemandeStatus.annulee)
+                  ElevatedButton.icon(
+                    onPressed: () => _payer(context, ref),
+                    icon: const Icon(Icons.payment, size: 18),
+                    label: const Text('Payer maintenant'),
                   ),
                 if (_peutEtreAnnulee)
                   OutlinedButton(

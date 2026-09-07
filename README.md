@@ -42,6 +42,36 @@ Le fichier est dans `app/build/app/outputs/flutter-apk/app-release.apk`.
 
 ---
 
+## Activer le paiement en ligne (CinetPay)
+
+Le code du paiement en ligne est prêt, mais il ne fonctionnera pas tant que tu n'as pas créé ton
+propre compte CinetPay (obligatoire : c'est ton compte, donc c'est toi qui reçois l'argent, pas
+Claude). Sans ça, le bouton "Payer maintenant" affichera juste un message d'erreur clair — le
+reste de l'app continue de fonctionner normalement.
+
+**Étapes (à faire une seule fois) :**
+
+1. Va sur https://cinetpay.com et clique sur "Créer un compte" (choisis "Mali" comme pays).
+2. CinetPay va te demander des documents pour vérifier ton identité/entreprise (KYC) — c'est
+   normal, tous les services de paiement font ça. Ça peut prendre quelques jours.
+3. Une fois le compte validé, connecte-toi sur https://app.cinetpay.com et va dans
+   **Paramètres → Cle API** pour récupérer ta clé (`apikey`) et ton identifiant de site
+   (`site_id`).
+4. Va sur https://dashboard.render.com → ton service backend → onglet **Environment**, et ajoute
+   deux nouvelles variables :
+   - `CINETPAY_API_KEY` = ta clé API
+   - `CINETPAY_SITE_ID` = ton identifiant de site
+5. Render redémarre automatiquement le service après l'ajout. Le paiement est alors actif.
+6. Fais un premier test toi-même avec un petit montant avant d'annoncer la fonctionnalité aux
+   utilisateurs.
+
+Pour l'instant, la plateforme ne prend **aucune commission** (le professeur reçoit 100% du
+montant fixé par l'admin) et le paiement se fait **avant** le premier cours. Si tu veux changer
+ça plus tard (ajouter une commission, permettre de payer après la séance...), reviens en discuter
+avec Claude — ce sont des décisions qui te reviennent.
+
+---
+
 ## Garder le projet en bon état dans le temps
 
 Ce projet a été construit avec l'aide de Claude (IA). C'est très utile pour avancer vite, mais
