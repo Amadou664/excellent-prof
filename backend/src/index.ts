@@ -17,6 +17,7 @@ import avisRoutes from "./modules/avis/avis.routes";
 import adminStatsRoutes from "./modules/admin/stats.routes";
 import filesRoutes from "./modules/files/files.routes";
 import notificationsRoutes from "./modules/notifications/notifications.routes";
+import { prisma } from "./config/prisma";
 
 const app = express();
 
@@ -67,8 +68,18 @@ app.use(
   })
 );
 
-app.get("/health", (_req, res) => {
-  res.json({ data: { status: "ok" } });
+// Verifie aussi que la base de donnees repond, pas seulement que le process Express tourne :
+// un outil de supervision externe (UptimeRobot, etc.) branche sur cette route detecte ainsi une
+// vraie panne (DB injoignable) et pas seulement un serveur qui repond sans pouvoir rien faire.
+app.get("/health", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ data: { status: "ok", database: "ok" } });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Health check: base de donnees injoignable:", err);
+    res.status(503).json({ data: { status: "degraded", database: "unreachable" } });
+  }
 });
 
 app.use("/api/auth", authRoutes);
@@ -91,9 +102,42 @@ app.use((req, res) => {
 // Toujours en dernier.
 app.use(errorHandler);
 
-app.listen(env.port, () => {
+const server = app.listen(env.port, () => {
   // eslint-disable-next-line no-console
   console.log(`L'Excellent Prof API demarree sur le port ${env.port} (env: ${env.nodeEnv})`);
 });
+
+// Sans ces handlers, une erreur asynchrone non rattrapee ailleurs (ex: une promesse oubliee
+// hors du chemin `asyncHandler`) fait planter tout le process Node instantanement, coupant TOUTES
+// les requetes en cours le temps que Render redemarre le service. On logge et on laisse le
+// serveur continuer a tourner plutot que de crasher pour une seule requete fautive.
+process.on("unhandledRejection", (reason) => {
+  // eslint-disable-next-line no-console
+  console.error("Unhandled promise rejection:", reason);
+});
+process.on("uncaughtException", (err) => {
+  // eslint-disable-next-line no-console
+  console.error("Uncaught exception:", err);
+});
+
+// Render envoie SIGTERM avant de redemarrer le service (nouveau deploiement, mise a l'echelle...).
+// Sans ce handler, les requetes en cours au moment du signal sont coupees net et la connexion
+// Prisma n'est jamais fermee proprement. Ici : on arrete d'accepter de nouvelles requetes, on
+// laisse les requetes en cours se terminer, puis on ferme la connexion DB avant de quitter.
+function shutdown() {
+  // eslint-disable-next-line no-console
+  console.log("Signal d'arret recu, fermeture propre du serveur...");
+  server.close(() => {
+    prisma
+      .$disconnect()
+      .catch(() => undefined)
+      .finally(() => process.exit(0));
+  });
+  // Filet de securite : si des requetes trainent, on force l'arret apres 10s plutot que de
+  // bloquer indefiniment le redemarrage.
+  setTimeout(() => process.exit(1), 10_000).unref();
+}
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
 
 export default app;
