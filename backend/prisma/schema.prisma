@@ -138,6 +138,13 @@ model TeacherProfile {
   user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   specialites        String[]
   diplomesUrls       String[]
+  // Piece d'identite officielle, distincte des diplomes : verification de securite minimale
+  // avant tout cours a domicile aupres de mineurs (voir conditions.html). Un admin doit la
+  // consulter avant de passer statutCandidature a VALIDEE.
+  pieceIdentiteUrl   String?
+  // Note libre laissee par l'admin lors de la verification (ID controlee, reference contactee,
+  // impression d'entretien...) : sert de trace/audit sur la decision de validation.
+  notesVerification  String            @default("")
   bio                String            @default("")
   zoneGeo            String            @default("")
   // Ex: { "lundi": ["18:00-20:00"], "mardi": [] }

@@ -91,34 +91,57 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-class _TeacherTile extends ConsumerWidget {
+class _TeacherTile extends ConsumerStatefulWidget {
   const _TeacherTile({required this.teacher, required this.onChanged});
 
   final TeacherProfileModel teacher;
   final VoidCallback onChanged;
 
-  Future<void> _updateCandidature(
-    BuildContext context,
-    WidgetRef ref,
-    StatutCandidature statut,
-  ) async {
+  @override
+  ConsumerState<_TeacherTile> createState() => _TeacherTileState();
+}
+
+class _TeacherTileState extends ConsumerState<_TeacherTile> {
+  late final TextEditingController _notesController;
+  bool _isSaving = false;
+
+  TeacherProfileModel get teacher => widget.teacher;
+  VoidCallback get onChanged => widget.onChanged;
+
+  @override
+  void initState() {
+    super.initState();
+    _notesController = TextEditingController(text: teacher.notesVerification);
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _updateCandidature(StatutCandidature statut) async {
+    setState(() => _isSaving = true);
     try {
       await ref.read(teacherRepositoryProvider).updateCandidature(
             teacherId: teacher.id,
             statutCandidature: statut,
+            notesVerification: _notesController.text.trim(),
           );
       onChanged();
     } catch (_) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Impossible de mettre à jour la candidature.')),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final nom = teacher.user?.nomComplet ?? 'Professeur';
     return Card(
       child: Padding(
@@ -138,10 +161,36 @@ class _TeacherTile extends ConsumerWidget {
             Wrap(spacing: 6, children: teacher.specialites.map((s) => Chip(label: Text(s))).toList()),
             const SizedBox(height: 6),
             Text(teacher.bio, maxLines: 3, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(
+                  teacher.pieceIdentiteUrl != null ? Icons.verified_user_outlined : Icons.warning_amber,
+                  size: 16,
+                  color: teacher.pieceIdentiteUrl != null ? AppColors.success : AppColors.error,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: teacher.pieceIdentiteUrl != null
+                      ? OutlinedButton.icon(
+                          onPressed: () => launchUrl(
+                            Uri.parse(teacher.pieceIdentiteUrl!),
+                            webOnlyWindowName: '_blank',
+                          ),
+                          icon: const Icon(Icons.badge_outlined, size: 16),
+                          label: const Text("Voir la pièce d'identité"),
+                        )
+                      : const Text(
+                          "Pièce d'identité manquante — à ne pas valider sans vérification",
+                          style: TextStyle(color: AppColors.error, fontSize: 12),
+                        ),
+                ),
+              ],
+            ),
             if (teacher.diplomesUrls.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                '${teacher.diplomesUrls.length} document(s) fourni(s) :',
+                '${teacher.diplomesUrls.length} diplôme(s)/document(s) fourni(s) :',
                 style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 4),
@@ -162,19 +211,28 @@ class _TeacherTile extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: 10),
+            TextField(
+              controller: _notesController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Note de vérification (ID contrôlée, référence contactée...)',
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 10),
             Wrap(
               spacing: 8,
               children: [
                 OutlinedButton(
-                  onPressed: () => _updateCandidature(context, ref, StatutCandidature.entretien),
+                  onPressed: _isSaving ? null : () => _updateCandidature(StatutCandidature.entretien),
                   child: const Text('Entretien'),
                 ),
                 ElevatedButton(
-                  onPressed: () => _updateCandidature(context, ref, StatutCandidature.validee),
+                  onPressed: _isSaving ? null : () => _updateCandidature(StatutCandidature.validee),
                   child: const Text('Valider'),
                 ),
                 OutlinedButton(
-                  onPressed: () => _updateCandidature(context, ref, StatutCandidature.refusee),
+                  onPressed: _isSaving ? null : () => _updateCandidature(StatutCandidature.refusee),
                   style: OutlinedButton.styleFrom(foregroundColor: AppColors.error),
                   child: const Text('Refuser'),
                 ),

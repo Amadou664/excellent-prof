@@ -16,6 +16,7 @@ export const registerSchema = z.object({
       specialites: z.array(z.string()).default([]),
       bio: z.string().default(""),
       diplomesUrls: z.array(z.string()).default([]),
+      pieceIdentiteUrl: z.string().optional(),
     })
     .optional(),
   studentSelf: z

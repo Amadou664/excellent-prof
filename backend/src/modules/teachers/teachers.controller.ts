@@ -29,6 +29,10 @@ export const list = asyncHandler(async (req: Request, res: Response) => {
 
 export const updateCandidature = asyncHandler(async (req: Request, res: Response) => {
   const body = updateCandidatureSchema.parse(req.body);
-  const data = await teachersService.updateCandidature(req.params.id, body.statutCandidature);
+  const data = await teachersService.updateCandidature(
+    req.params.id,
+    body.statutCandidature,
+    body.notesVerification
+  );
   res.json({ data });
 });

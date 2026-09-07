@@ -46,6 +46,7 @@ export async function registerUser(params: {
           specialites: body.teacherProfile?.specialites ?? [],
           bio: body.teacherProfile?.bio ?? "",
           diplomesUrls: body.teacherProfile?.diplomesUrls ?? [],
+          pieceIdentiteUrl: body.teacherProfile?.pieceIdentiteUrl,
           statutCandidature: "SOUMISE",
         },
       });

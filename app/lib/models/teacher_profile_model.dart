@@ -45,6 +45,13 @@ class TeacherProfileModel {
   final String userId;
   final List<String> specialites;
   final List<String> diplomesUrls;
+
+  /// Pièce d'identité officielle, distincte des diplômes — vérification de
+  /// sécurité minimale avant validation (voir conditions.html).
+  final String? pieceIdentiteUrl;
+
+  /// Note libre de l'admin sur la vérification effectuée.
+  final String notesVerification;
   final String bio;
   final String zoneGeo;
 
@@ -60,6 +67,8 @@ class TeacherProfileModel {
     required this.userId,
     required this.specialites,
     required this.diplomesUrls,
+    this.pieceIdentiteUrl,
+    this.notesVerification = '',
     required this.bio,
     required this.zoneGeo,
     required this.disponibilites,
@@ -85,6 +94,8 @@ class TeacherProfileModel {
               ?.map((e) => e.toString())
               .toList() ??
           <String>[],
+      pieceIdentiteUrl: json['pieceIdentiteUrl'] as String?,
+      notesVerification: json['notesVerification'] as String? ?? '',
       bio: json['bio'] as String? ?? '',
       zoneGeo: json['zoneGeo'] as String? ?? '',
       disponibilites: disposRaw.map(
@@ -114,6 +125,8 @@ class TeacherProfileModel {
       'userId': userId,
       'specialites': specialites,
       'diplomesUrls': diplomesUrls,
+      'pieceIdentiteUrl': pieceIdentiteUrl,
+      'notesVerification': notesVerification,
       'bio': bio,
       'zoneGeo': zoneGeo,
       'disponibilites': disponibilites,

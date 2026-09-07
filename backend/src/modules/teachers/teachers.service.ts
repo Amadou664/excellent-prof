@@ -56,14 +56,18 @@ export async function listTeachers(query: z.infer<typeof listTeachersQuerySchema
 
 export async function updateCandidature(
   teacherProfileId: string,
-  statutCandidature: "VALIDEE" | "REFUSEE" | "ENTRETIEN"
+  statutCandidature: "VALIDEE" | "REFUSEE" | "ENTRETIEN",
+  notesVerification?: string
 ) {
   const profile = await findProfileWithUserOrThrow({ id: teacherProfileId });
 
   const updated = await prisma.$transaction(async (tx) => {
     const updatedProfile = await tx.teacherProfile.update({
       where: { id: teacherProfileId },
-      data: { statutCandidature },
+      data: {
+        statutCandidature,
+        ...(notesVerification !== undefined ? { notesVerification } : {}),
+      },
       include: { user: true },
     });
 

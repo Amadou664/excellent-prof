@@ -38,9 +38,12 @@ class _RegisterTeacherScreenState extends ConsumerState<RegisterTeacherScreen> {
 
   final List<String> _specialites = [];
   final List<_UploadedDiplome> _diplomes = [];
+  String? _pieceIdentiteUrl;
+  String? _pieceIdentiteName;
 
   bool _isLoading = false;
   bool _isUploading = false;
+  bool _isUploadingId = false;
   bool _obscurePassword = true;
   String? _errorMessage;
 
@@ -89,10 +92,44 @@ class _RegisterTeacherScreenState extends ConsumerState<RegisterTeacherScreen> {
     }
   }
 
+  Future<void> _pickAndUploadPieceIdentite() async {
+    final picker = ImagePicker();
+    final XFile? file = await picker.pickImage(source: ImageSource.gallery);
+    if (file == null) return;
+
+    setState(() => _isUploadingId = true);
+    try {
+      final bytes = await file.readAsBytes();
+      final url = await ref.read(fileRepositoryProvider).upload(
+            bytes: bytes,
+            filename: file.name,
+            mimeType: file.mimeType ?? 'image/jpeg',
+          );
+      setState(() {
+        _pieceIdentiteUrl = url;
+        _pieceIdentiteName = file.name;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _errorMessage = "Échec de l'envoi de la pièce d'identité. Réessayez.");
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingId = false);
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_specialites.isEmpty) {
       setState(() => _errorMessage = 'Ajoutez au moins une spécialité.');
+      return;
+    }
+    if (_pieceIdentiteUrl == null) {
+      setState(
+        () => _errorMessage =
+            "La pièce d'identité est obligatoire : elle nous permet de vérifier qui donnera "
+            "cours à des enfants, avant toute mise en relation avec une famille.",
+      );
       return;
     }
     setState(() {
@@ -113,6 +150,7 @@ class _RegisterTeacherScreenState extends ConsumerState<RegisterTeacherScreen> {
         'specialites': _specialites,
         'bio': _bioController.text.trim(),
         'diplomesUrls': _diplomes.map((d) => d.url).toList(),
+        'pieceIdentiteUrl': _pieceIdentiteUrl,
       },
       onError: (message) {
         if (mounted) setState(() => _errorMessage = message);
@@ -279,6 +317,43 @@ class _RegisterTeacherScreenState extends ConsumerState<RegisterTeacherScreen> {
                       : const Icon(Icons.upload_file),
                   label: Text(_isUploading ? 'Envoi en cours...' : 'Ajouter un document'),
                 ),
+                const SizedBox(height: 20),
+                const Text(
+                  "Pièce d'identité (obligatoire)",
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  "Carte d'identité, passeport ou permis. Cette vérification protège les "
+                  "familles : nos cours ont lieu à domicile, parfois auprès d'enfants.",
+                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                if (_pieceIdentiteUrl != null)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.badge_outlined, color: AppColors.primaryGreen),
+                    title: Text(_pieceIdentiteName ?? 'Document', overflow: TextOverflow.ellipsis),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => setState(() {
+                        _pieceIdentiteUrl = null;
+                        _pieceIdentiteName = null;
+                      }),
+                    ),
+                  )
+                else
+                  OutlinedButton.icon(
+                    onPressed: _isUploadingId ? null : _pickAndUploadPieceIdentite,
+                    icon: _isUploadingId
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.upload_file),
+                    label: Text(_isUploadingId ? 'Envoi en cours...' : "Ajouter ma pièce d'identité"),
+                  ),
                 const SizedBox(height: 24),
                 AppButton(
                   label: 'Envoyer ma candidature',

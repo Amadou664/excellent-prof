@@ -59,15 +59,19 @@ class TeacherRepository {
   }
 
   /// `PATCH /teachers/:id/candidature` (ADMIN) body
-  /// `{ "statutCandidature": "VALIDEE|REFUSEE|ENTRETIEN" }`.
+  /// `{ "statutCandidature": "VALIDEE|REFUSEE|ENTRETIEN", "notesVerification"? }`.
   Future<TeacherProfileModel> updateCandidature({
     required String teacherId,
     required StatutCandidature statutCandidature,
+    String? notesVerification,
   }) async {
     final data = await _client.unwrap(
       () => _client.dio.patch(
         '/teachers/$teacherId/candidature',
-        data: {'statutCandidature': statutCandidature.apiValue},
+        data: {
+          'statutCandidature': statutCandidature.apiValue,
+          if (notesVerification != null) 'notesVerification': notesVerification,
+        },
       ),
     );
     return TeacherProfileModel.fromJson(data as Map<String, dynamic>);

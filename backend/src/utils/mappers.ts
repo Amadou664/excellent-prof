@@ -56,6 +56,8 @@ export function toTeacherProfileResponse(
     userId: profile.userId,
     specialites: profile.specialites,
     diplomesUrls: profile.diplomesUrls,
+    pieceIdentiteUrl: profile.pieceIdentiteUrl,
+    notesVerification: profile.notesVerification,
     bio: profile.bio,
     zoneGeo: profile.zoneGeo,
     disponibilites: profile.disponibilites,

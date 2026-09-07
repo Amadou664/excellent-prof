@@ -16,4 +16,7 @@ export const listTeachersQuerySchema = z.object({
 
 export const updateCandidatureSchema = z.object({
   statutCandidature: z.enum(["VALIDEE", "REFUSEE", "ENTRETIEN"]),
+  // Note admin sur la verification effectuee (piece d'identite controlee, reference contactee...).
+  // Voir prisma/schema.prisma sur TeacherProfile.notesVerification.
+  notesVerification: z.string().optional(),
 });
