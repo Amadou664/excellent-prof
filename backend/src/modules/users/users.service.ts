@@ -1,5 +1,6 @@
 import { Prisma, UserStatus } from "@prisma/client";
 import { prisma } from "../../config/prisma";
+import { getFirebaseAuth } from "../../config/firebaseAdmin";
 import { ApiError } from "../../utils/apiError";
 import {
   toStudentResponse,
@@ -54,6 +55,28 @@ export async function updateUserStatus(id: string, status: UserStatus) {
 export async function updateMe(userId: string, body: z.infer<typeof updateMeSchema>) {
   const updated = await prisma.user.update({ where: { id: userId }, data: body });
   return toUserResponse(updated);
+}
+
+/**
+ * Suppression definitive de son propre compte (promise dans la politique de confidentialite).
+ * La suppression Postgres cascade sur toutes les donnees liees (voir onDelete: Cascade dans
+ * prisma/schema.prisma : students, demandes, messages, avis, notifications, signalements...).
+ * Le compte Firebase Auth associe est aussi supprime en best-effort : un echec ici ne bloque pas
+ * la suppression (deja effective cote donnees applicatives, et verifyFirebaseToken refusera de
+ * toute facon tout token pour ce compte des lors qu'aucun User ne lui correspond plus).
+ */
+export async function deleteMe(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw ApiError.notFound("Utilisateur introuvable");
+  }
+  await prisma.user.delete({ where: { id: userId } });
+  try {
+    await getFirebaseAuth().deleteUser(user.firebaseUid);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Echec suppression compte Firebase (donnees applicatives deja supprimees):", err);
+  }
 }
 
 /**

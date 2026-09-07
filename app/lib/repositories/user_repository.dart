@@ -107,4 +107,10 @@ class UserRepository {
     );
     return UserModel.fromJson(data as Map<String, dynamic>);
   }
+
+  /// `DELETE /users/me` — suppression définitive et irréversible de son
+  /// compte et de toutes ses données associées.
+  Future<void> deleteMe() async {
+    await _client.unwrap(() => _client.dio.delete('/users/me'));
+  }
 }

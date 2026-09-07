@@ -93,6 +93,11 @@ enum SeanceStatut {
   ANNULEE
 }
 
+enum SignalementStatut {
+  NOUVEAU
+  TRAITE
+}
+
 // ---------------------------------------------------------------------------
 // Modeles
 // ---------------------------------------------------------------------------
@@ -127,6 +132,9 @@ model User {
 
   messagesEnvoyes Message[] @relation("MessageAuteur")
   notifications   Notification[]
+
+  signalementsEmis  Signalement[] @relation("SignalementAuteur")
+  signalementsRecus Signalement[] @relation("SignalementCible")
 
   @@index([role])
   @@index([status])
@@ -245,6 +253,24 @@ model Notification {
 
   @@index([userId])
   @@index([userId, lue])
+}
+
+// Signalement d'un utilisateur par un autre (voir conditions.html : "signaler immediatement tout
+// comportement inapproprie"). Rattache a une Demande pour donner a l'admin le contexte complet
+// (echange, professeur/famille concernes) au moment du traitement.
+model Signalement {
+  id        String            @id @default(uuid())
+  auteurId  String
+  auteur    User              @relation("SignalementAuteur", fields: [auteurId], references: [id], onDelete: Cascade)
+  cibleId   String
+  cible     User              @relation("SignalementCible", fields: [cibleId], references: [id], onDelete: Cascade)
+  demandeId String?
+  motif     String
+  statut    SignalementStatut @default(NOUVEAU)
+  createdAt DateTime          @default(now())
+
+  @@index([statut])
+  @@index([cibleId])
 }
 
 model Fichier {

@@ -23,6 +23,12 @@ export const updateMe = asyncHandler(async (req: Request, res: Response) => {
   res.json({ data });
 });
 
+export const deleteMe = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  await usersService.deleteMe(req.user.id);
+  res.status(204).send();
+});
+
 export const getDetail = asyncHandler(async (req: Request, res: Response) => {
   const data = await usersService.getUserDetail(req.params.id);
   res.json({ data });

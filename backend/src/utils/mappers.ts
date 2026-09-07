@@ -7,6 +7,7 @@ import {
   Message,
   Notification,
   Seance,
+  Signalement,
   Student,
   TeacherProfile,
   User,
@@ -84,6 +85,18 @@ export function toDemandeResponse(demande: Demande) {
     montant: demande.montant,
     paye: demande.paye,
     createdAt: demande.createdAt.toISOString(),
+  };
+}
+
+export function toSignalementResponse(signalement: Signalement) {
+  return {
+    id: signalement.id,
+    auteurId: signalement.auteurId,
+    cibleId: signalement.cibleId,
+    demandeId: signalement.demandeId,
+    motif: signalement.motif,
+    statut: signalement.statut,
+    createdAt: signalement.createdAt.toISOString(),
   };
 }
 

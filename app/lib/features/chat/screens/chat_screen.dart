@@ -46,6 +46,71 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     super.dispose();
   }
 
+  Future<void> _openReportDialog(BuildContext context, WidgetRef ref) async {
+    final motifController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Signaler cette personne'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Décrivez le problème. Notre équipe examinera votre signalement dans les "
+              "meilleurs délais.",
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: motifController,
+              maxLines: 3,
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: 'Ex : comportement inapproprié, demande de paiement suspecte...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Envoyer', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final motif = motifController.text.trim();
+    if (motif.length < 5) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Merci de décrire le problème (5 caractères minimum).')),
+        );
+      }
+      return;
+    }
+    try {
+      await ref.read(signalementRepositoryProvider).create(
+            demandeId: widget.demandeId,
+            motif: motif,
+          );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Signalement envoyé. Merci de nous avoir prévenus.')),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Échec de l'envoi du signalement. Réessayez.")),
+        );
+      }
+    }
+  }
+
   Future<void> _send() async {
     final contenu = _controller.text.trim();
     if (contenu.isEmpty || _isSending) return;
@@ -74,7 +139,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final myId = ref.watch(currentUserProvider).valueOrNull?.id;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Messages')),
+      appBar: AppBar(
+        title: const Text('Messages'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.flag_outlined),
+            tooltip: 'Signaler',
+            onPressed: () => _openReportDialog(context, ref),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(

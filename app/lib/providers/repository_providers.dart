@@ -10,6 +10,7 @@ import '../repositories/demande_repository.dart';
 import '../repositories/file_repository.dart';
 import '../repositories/notification_repository.dart';
 import '../repositories/seance_repository.dart';
+import '../repositories/signalement_repository.dart';
 import '../repositories/student_repository.dart';
 import '../repositories/teacher_repository.dart';
 import '../repositories/user_repository.dart';
@@ -62,4 +63,8 @@ final fileRepositoryProvider = Provider<FileRepository>(
 
 final notificationRepositoryProvider = Provider<NotificationRepository>(
   (ref) => NotificationRepository(ref.watch(apiClientProvider)),
+);
+
+final signalementRepositoryProvider = Provider<SignalementRepository>(
+  (ref) => SignalementRepository(ref.watch(apiClientProvider)),
 );

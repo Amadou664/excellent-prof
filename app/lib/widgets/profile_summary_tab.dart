@@ -57,6 +57,59 @@ class _ProfileSummaryTabState extends ConsumerState<ProfileSummaryTab> {
     }
   }
 
+  Future<void> _deleteAccount() async {
+    final confirmController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer définitivement votre compte ?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Cette action est irréversible. Toutes vos données seront supprimées : profil, "
+              "enfants/élèves rattachés, demandes, séances, messages.\n\n"
+              'Tapez "SUPPRIMER" pour confirmer.',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: confirmController,
+              autofocus: true,
+              decoration: const InputDecoration(border: OutlineInputBorder()),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Supprimer', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    if (confirmController.text.trim().toUpperCase() != 'SUPPRIMER') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Suppression annulée : le mot tapé ne correspond pas.')),
+        );
+      }
+      return;
+    }
+    try {
+      await ref.read(userRepositoryProvider).deleteMe();
+      await ref.read(authServiceProvider).signOut();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Échec de la suppression du compte. Réessayez.')),
+        );
+      }
+    }
+  }
+
   void _openChangePassword() {
     showModalBottomSheet(
       context: context,
@@ -151,6 +204,16 @@ class _ProfileSummaryTabState extends ConsumerState<ProfileSummaryTab> {
           icon: const Icon(Icons.logout, color: AppColors.error),
           label: const Text('Se déconnecter', style: TextStyle(color: AppColors.error)),
           style: OutlinedButton.styleFrom(side: const BorderSide(color: AppColors.error)),
+        ),
+        const SizedBox(height: 24),
+        Center(
+          child: TextButton(
+            onPressed: _deleteAccount,
+            child: const Text(
+              'Supprimer mon compte',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            ),
+          ),
         ),
       ],
     );
