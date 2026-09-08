@@ -137,6 +137,21 @@ describe("initierPaiement", () => {
         data: { statut: "ECHOUE" },
       });
     });
+
+    it("marque la tentative ECHOUE quand CinetPay est injoignable (timeout/reseau)", async () => {
+      prismaMock.demande.findUnique.mockResolvedValue(makeDemande() as never);
+      prismaMock.paiement.create.mockResolvedValue({ id: "paiement-1" } as never);
+      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network error")));
+
+      await expect(
+        initierPaiement(makeUser({ id: "user-1" }), { demandeId: "demande-1" })
+      ).rejects.toMatchObject({ status: 500, code: "CINETPAY_ERREUR" });
+
+      expect(prismaMock.paiement.update).toHaveBeenCalledWith({
+        where: { id: "paiement-1" },
+        data: { statut: "ECHOUE" },
+      });
+    });
   });
 });
 

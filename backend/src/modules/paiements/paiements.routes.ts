@@ -1,4 +1,5 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import { verifyFirebaseToken, requireRole } from "../../middleware/auth";
 import * as paiementsController from "./paiements.controller";
 
@@ -13,7 +14,21 @@ router.post("/webhook", paiementsController.webhook);
 router.get("/webhook", paiementsController.webhook);
 
 router.use(verifyFirebaseToken);
-router.post("/initier", paiementsController.initier);
+
+// Chaque appel reussi cree une tentative CinetPay reelle : on limite pour eviter qu'un client
+// buggue (ou malveillant) n'en spamme la creation, sans jamais gener un usage normal (personne ne
+// tente legitimement de payer 30 fois par heure la meme chose).
+router.post(
+  "/initier",
+  rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: { code: "RATE_LIMITED", message: "Trop de tentatives. Reessayez plus tard." } },
+  }),
+  paiementsController.initier
+);
 router.get("/:demandeId/statut", paiementsController.statut);
 router.get("/", requireRole("ADMIN"), paiementsController.listAll);
 

@@ -60,34 +60,41 @@ export async function initierPaiement(
     },
   });
 
-  const response = await fetch(`${CINETPAY_BASE_URL}/payment`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      apikey: env.cinetpayApiKey,
-      site_id: env.cinetpaySiteId,
-      transaction_id: transactionId,
-      amount: demande.montant,
-      currency: "XOF",
-      description: `Cours ${demande.matiere} - L'Excellent Prof`,
-      customer_name: user.nom,
-      customer_surname: user.prenom,
-      customer_email: user.email,
-      customer_phone_number: user.telephone,
-      customer_country: "ML",
-      notify_url: `${env.backendPublicUrl}/api/paiements/webhook`,
-      return_url: `${env.webPublicUrl}/paiement-retour.html`,
-      channels: "ALL",
-      metadata: paiement.id,
-      lang: "FR",
-    }),
-  });
-
-  const json = (await response.json()) as {
-    code?: string;
-    message?: string;
-    data?: { payment_url?: string; payment_token?: string };
-  };
+  let json: { code?: string; message?: string; data?: { payment_url?: string; payment_token?: string } };
+  try {
+    const response = await fetch(`${CINETPAY_BASE_URL}/payment`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(15_000),
+      body: JSON.stringify({
+        apikey: env.cinetpayApiKey,
+        site_id: env.cinetpaySiteId,
+        transaction_id: transactionId,
+        amount: demande.montant,
+        currency: "XOF",
+        description: `Cours ${demande.matiere} - L'Excellent Prof`,
+        customer_name: user.nom,
+        customer_surname: user.prenom,
+        customer_email: user.email,
+        customer_phone_number: user.telephone,
+        customer_country: "ML",
+        notify_url: `${env.backendPublicUrl}/api/paiements/webhook`,
+        return_url: `${env.webPublicUrl}/paiement-retour.html`,
+        channels: "ALL",
+        metadata: paiement.id,
+        lang: "FR",
+      }),
+    });
+    json = (await response.json()) as typeof json;
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("CinetPay injoignable (initiation):", err);
+    await prisma.paiement.update({ where: { id: paiement.id }, data: { statut: "ECHOUE" } });
+    throw ApiError.internal(
+      "Impossible de contacter le service de paiement pour le moment. Reessayez plus tard.",
+      "CINETPAY_ERREUR"
+    );
+  }
 
   if (json.code !== "201" || !json.data?.payment_url) {
     await prisma.paiement.update({ where: { id: paiement.id }, data: { statut: "ECHOUE" } });
@@ -109,6 +116,7 @@ async function verifierAupresDeCinetpay(transactionId: string) {
   const response = await fetch(`${CINETPAY_BASE_URL}/payment/check`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    signal: AbortSignal.timeout(15_000),
     body: JSON.stringify({
       apikey: env.cinetpayApiKey,
       site_id: env.cinetpaySiteId,
