@@ -305,6 +305,10 @@ model Fichier {
   filename  String
   mimeType  String
   data      Bytes
+  // Une piece d'identite (carte, passeport) est sensible : GET /files/:id l'exige alors reservee
+  // aux ADMIN authentifies, contrairement aux photos de profil/diplomes qui restent publiques
+  // (deja affichees sans compte dans plusieurs ecrans). Voir files.controller.ts.
+  sensible  Boolean  @default(false)
   createdAt DateTime @default(now())
 }
 

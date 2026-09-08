@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { ApiError } from "../../utils/apiError";
+import { decodeBearerToken } from "../../middleware/auth";
+import { prisma } from "../../config/prisma";
 import * as filesService from "./files.service";
 
 /**
@@ -41,15 +43,37 @@ export const upload = asyncHandler(async (req: Request, res: Response) => {
   const id = await filesService.createFichier(
     req.file.originalname,
     req.file.mimetype,
-    req.file.buffer
+    req.file.buffer,
+    req.body?.sensible === "true"
   );
   const url = `${req.protocol}://${req.get("host")}/api/files/${id}`;
   res.status(201).json({ data: { id, url } });
 });
 
+/**
+ * Verifie que l'appelant est un ADMIN authentifie. Utilise uniquement pour les fichiers
+ * `sensible` (pieces d'identite) : ne s'applique jamais aux photos/diplomes, qui restent servis
+ * publiquement exactement comme avant (voir schema.prisma sur `Fichier.sensible`).
+ */
+async function assertAdmin(req: Request) {
+  const decoded = await decodeBearerToken(req).catch(() => {
+    throw ApiError.unauthorized("Ce fichier necessite une connexion administrateur.");
+  });
+  const user = await prisma.user.findUnique({ where: { firebaseUid: decoded.uid } });
+  if (!user || user.role !== "ADMIN") {
+    throw ApiError.forbidden("Ce fichier est reserve aux administrateurs.");
+  }
+}
+
 export const serve = asyncHandler(async (req: Request, res: Response) => {
   const fichier = await filesService.getFichier(req.params.id);
+  if (fichier.sensible) {
+    await assertAdmin(req);
+  }
   res.set("Content-Type", fichier.mimeType);
-  res.set("Cache-Control", "public, max-age=31536000, immutable");
+  res.set(
+    "Cache-Control",
+    fichier.sensible ? "private, no-store" : "public, max-age=31536000, immutable"
+  );
   res.send(fichier.data);
 });

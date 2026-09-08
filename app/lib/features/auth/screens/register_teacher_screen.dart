@@ -106,6 +106,7 @@ class _RegisterTeacherScreenState extends ConsumerState<RegisterTeacherScreen> {
             bytes: bytes,
             filename: file.name,
             mimeType: file.mimeType ?? 'image/jpeg',
+            sensible: true,
           );
       setState(() {
         _pieceIdentiteUrl = url;

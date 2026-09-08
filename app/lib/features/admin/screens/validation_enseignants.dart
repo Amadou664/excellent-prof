@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -120,6 +122,38 @@ class _TeacherTileState extends ConsumerState<_TeacherTile> {
     super.dispose();
   }
 
+  /// Affiche la pièce d'identité dans l'app plutôt que de l'ouvrir dans un
+  /// navigateur externe : ce fichier est `sensible` côté backend (réservé
+  /// aux ADMIN authentifiés), et `launchUrl` ne peut pas transmettre le
+  /// token Firebase nécessaire.
+  void _voirPieceIdentite(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        child: FutureBuilder<List<int>>(
+          future: ref.read(fileRepositoryProvider).fetchProtectedBytes(teacher.pieceIdentiteUrl!),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const SizedBox(
+                height: 200,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            if (snapshot.hasError || !snapshot.hasData) {
+              return const Padding(
+                padding: EdgeInsets.all(24),
+                child: Text("Impossible de charger la pièce d'identité."),
+              );
+            }
+            return InteractiveViewer(
+              child: Image.memory(Uint8List.fromList(snapshot.data!)),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   Future<void> _updateCandidature(StatutCandidature statut) async {
     setState(() => _isSaving = true);
     try {
@@ -173,10 +207,7 @@ class _TeacherTileState extends ConsumerState<_TeacherTile> {
                 Expanded(
                   child: teacher.pieceIdentiteUrl != null
                       ? OutlinedButton.icon(
-                          onPressed: () => launchUrl(
-                            Uri.parse(teacher.pieceIdentiteUrl!),
-                            webOnlyWindowName: '_blank',
-                          ),
+                          onPressed: () => _voirPieceIdentite(context),
                           icon: const Icon(Icons.badge_outlined, size: 16),
                           label: const Text("Voir la pièce d'identité"),
                         )

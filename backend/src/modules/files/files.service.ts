@@ -1,8 +1,13 @@
 import { prisma } from "../../config/prisma";
 import { ApiError } from "../../utils/apiError";
 
-export async function createFichier(filename: string, mimeType: string, data: Buffer) {
-  const fichier = await prisma.fichier.create({ data: { filename, mimeType, data } });
+export async function createFichier(
+  filename: string,
+  mimeType: string,
+  data: Buffer,
+  sensible: boolean
+) {
+  const fichier = await prisma.fichier.create({ data: { filename, mimeType, data, sensible } });
   return fichier.id;
 }
 

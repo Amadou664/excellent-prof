@@ -6,7 +6,7 @@ import { prisma } from "../config/prisma";
 import { ApiError } from "../utils/apiError";
 import { asyncHandler } from "../utils/asyncHandler";
 
-async function decodeBearerToken(req: Request): Promise<DecodedIdToken> {
+export async function decodeBearerToken(req: Request): Promise<DecodedIdToken> {
   const header = req.headers.authorization;
   if (!header || !header.startsWith("Bearer ")) {
     throw ApiError.unauthorized("Header Authorization: Bearer <token> manquant");
