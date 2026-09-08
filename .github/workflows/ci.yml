@@ -27,6 +27,7 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npx tsc -p tsconfig.json --noEmit
+      - run: npm test
 
   app:
     runs-on: ubuntu-latest
