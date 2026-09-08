@@ -34,6 +34,9 @@ export const env = {
   // URLs publiques utilisees pour construire notify_url/return_url envoyes a CinetPay.
   backendPublicUrl: readString("BACKEND_PUBLIC_URL", "https://excellent-prof-backend.onrender.com"),
   webPublicUrl: readString("WEB_PUBLIC_URL", "https://excellent-prof.web.app"),
+
+  // Suivi d'erreurs (Sentry) — voir src/instrument.ts. Vide tant que le compte n'est pas cree.
+  sentryDsn: readString("SENTRY_DSN"),
 };
 
 export const isProduction = env.nodeEnv === "production";

@@ -1,3 +1,5 @@
+import "./instrument";
+import * as Sentry from "@sentry/node";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -106,6 +108,11 @@ app.use((req, res) => {
   res.status(404).json({ error: { code: "NOT_FOUND", message: `Route inconnue: ${req.method} ${req.path}` } });
 });
 
+// Capture vers Sentry uniquement les erreurs 500+ (comportement par defaut du SDK) : les
+// ApiError "attendues" (404, 403, 409...) ne sont pas de vrais bugs et ne doivent pas consommer
+// le quota gratuit Sentry. Sans SENTRY_DSN configure, ce middleware ne fait rien.
+Sentry.setupExpressErrorHandler(app);
+
 // Toujours en dernier.
 app.use(errorHandler);
 
@@ -121,10 +128,12 @@ const server = app.listen(env.port, () => {
 process.on("unhandledRejection", (reason) => {
   // eslint-disable-next-line no-console
   console.error("Unhandled promise rejection:", reason);
+  Sentry.captureException(reason);
 });
 process.on("uncaughtException", (err) => {
   // eslint-disable-next-line no-console
   console.error("Uncaught exception:", err);
+  Sentry.captureException(err);
 });
 
 // Render envoie SIGTERM avant de redemarrer le service (nouveau deploiement, mise a l'echelle...).

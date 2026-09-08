@@ -72,6 +72,27 @@ avec Claude — ce sont des décisions qui te reviennent.
 
 ---
 
+## Voir les erreurs cachées de l'application (Sentry)
+
+Avant, si une erreur inattendue se produisait sur le serveur, elle était juste écrite dans les
+logs Render — personne ne la voyait jamais en pratique. Sentry résout ça : dès qu'une vraie erreur
+se produit, tu reçois un email avec les détails (quelle route, quel utilisateur, quel message).
+
+**Étapes (à faire une seule fois, 5 minutes, gratuit) :**
+
+1. Va sur https://sentry.io et crée un compte gratuit.
+2. Crée un projet, choisis la plateforme "Node.js" (Express).
+3. Sentry t'affiche une adresse qui ressemble à
+   `https://xxxxxxxx@xxxxx.ingest.sentry.io/xxxxxxx` — c'est ton "DSN", copie-la.
+4. Va sur https://dashboard.render.com → ton service backend → onglet **Environment**, et ajoute
+   une nouvelle variable : `SENTRY_DSN` = la valeur copiée.
+5. Render redémarre automatiquement. C'est actif.
+
+Tant que tu n'as pas fait ça, rien ne change (les erreurs restent juste dans les logs Render comme
+avant) — ce n'est pas bloquant, juste une amélioration de confort quand tu voudras la brancher.
+
+---
+
 ## Garder le projet en bon état dans le temps
 
 Ce projet a été construit avec l'aide de Claude (IA). C'est très utile pour avancer vite, mais
