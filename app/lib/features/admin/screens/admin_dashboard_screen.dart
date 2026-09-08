@@ -8,6 +8,7 @@ import 'admin_dashboard_stats.dart';
 import 'attribution_demandes.dart';
 import 'gestion_annonces.dart';
 import 'gestion_cours_pour_tous.dart';
+import 'gestion_paiements.dart';
 import 'gestion_signalements.dart';
 import 'gestion_utilisateurs.dart';
 import 'moderation_avis.dart';
@@ -20,9 +21,9 @@ class _AdminSection {
   const _AdminSection(this.title, this.icon, this.screen);
 }
 
-/// Coquille de l'espace Admin : navigation par tiroir (Drawer) entre les 8
+/// Coquille de l'espace Admin : navigation par tiroir (Drawer) entre les 9
 /// sections (stats, utilisateurs, candidatures, demandes, annonces, cours
-/// pour tous, avis, signalements).
+/// pour tous, avis, signalements, paiements).
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});
 
@@ -42,6 +43,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     _AdminSection('Cours pour tous', Icons.diversity_3_outlined, GestionCoursPourTous()),
     _AdminSection('Modération avis', Icons.reviews_outlined, ModerationAvis()),
     _AdminSection('Signalements', Icons.flag_outlined, GestionSignalements()),
+    _AdminSection('Paiements', Icons.payment_outlined, GestionPaiements()),
   ];
 
   @override

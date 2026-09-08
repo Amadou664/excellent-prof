@@ -157,10 +157,56 @@ export async function traiterWebhook(transactionId: string | undefined) {
         `Le paiement pour le cours de ${paiement.demande.matiere} a ete confirme.`
       );
     }
+
+    const admins = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true } });
+    await Promise.all(
+      admins.map((admin) =>
+        sendPushToUser(
+          admin.id,
+          "Paiement recu",
+          `Un paiement de ${paiement.montant} FCFA a ete confirme pour le cours de ${paiement.demande.matiere}.`
+        )
+      )
+    );
   } else if (statutCinetpay === "REFUSED") {
     await prisma.paiement.update({ where: { id: paiement.id }, data: { statut: "ECHOUE" } });
   }
   // "PENDING" ou statut inconnu : on ne change rien, un futur appel webhook confirmera.
+}
+
+/**
+ * Vue d'ensemble (ADMIN) de toutes les tentatives de paiement, tous statuts confondus — y
+ * compris les echecs et les demandes non encore assignees a un professeur, contrairement a
+ * l'ecran "Demandes de cours" qui se filtre par defaut sur le statut de la demande.
+ */
+export async function listAllPaiements() {
+  const paiements = await prisma.paiement.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      demande: {
+        include: {
+          student: { select: { nom: true, prenom: true } },
+          professeur: { select: { nom: true, prenom: true } },
+        },
+      },
+    },
+  });
+
+  return paiements.map((p) => ({
+    id: p.id,
+    demandeId: p.demandeId,
+    matiere: p.demande.matiere,
+    eleve: `${p.demande.student.prenom} ${p.demande.student.nom}`,
+    professeur: p.demande.professeur
+      ? `${p.demande.professeur.prenom} ${p.demande.professeur.nom}`
+      : null,
+    montant: p.montant,
+    devise: p.devise,
+    statut: p.statut,
+    moyenPaiement: p.moyenPaiement,
+    transactionId: p.transactionId,
+    createdAt: p.createdAt.toISOString(),
+  }));
 }
 
 export async function getStatutPaiement(demandeId: string, user: User) {

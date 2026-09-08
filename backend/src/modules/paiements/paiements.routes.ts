@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyFirebaseToken } from "../../middleware/auth";
+import { verifyFirebaseToken, requireRole } from "../../middleware/auth";
 import * as paiementsController from "./paiements.controller";
 
 const router = Router();
@@ -15,5 +15,6 @@ router.get("/webhook", paiementsController.webhook);
 router.use(verifyFirebaseToken);
 router.post("/initier", paiementsController.initier);
 router.get("/:demandeId/statut", paiementsController.statut);
+router.get("/", requireRole("ADMIN"), paiementsController.listAll);
 
 export default router;

@@ -17,6 +17,11 @@ export const statut = asyncHandler(async (req: Request, res: Response) => {
   res.json({ data });
 });
 
+export const listAll = asyncHandler(async (_req: Request, res: Response) => {
+  const data = await paiementsService.listAllPaiements();
+  res.json({ data });
+});
+
 /**
  * Appele directement par les serveurs de CinetPay (pas par l'app), en POST ou GET selon leur
  * implementation. Toujours repondre 200 rapidement : CinetPay reessaie sinon, et la verite du
