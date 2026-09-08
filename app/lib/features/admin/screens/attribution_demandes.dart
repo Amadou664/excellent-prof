@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../models/demande_model.dart';
 import '../../../models/enums.dart';
 import '../../../models/teacher_profile_model.dart';
@@ -145,15 +146,51 @@ class _DemandeTile extends ConsumerWidget {
       );
       return;
     }
+
+    // Les professeurs enseignant la matière demandée remontent en premier, pour eviter a l'admin
+    // de devoir se souvenir/deviner qui enseigne quoi parmi potentiellement beaucoup de profs.
+    bool enseigneLaMatiere(TeacherProfileModel t) => t.specialites
+        .any((s) => s.trim().toLowerCase() == demande.matiere.trim().toLowerCase());
+    final sortedTeachers = [...teachersAsync]
+      ..sort((a, b) {
+        final aMatch = enseigneLaMatiere(a);
+        final bMatch = enseigneLaMatiere(b);
+        if (aMatch != bMatch) return aMatch ? -1 : 1;
+        return (a.user?.nomComplet ?? '').compareTo(b.user?.nomComplet ?? '');
+      });
+
     final selected = await showDialog<TeacherProfileModel>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('Choisir un professeur'),
-        children: teachersAsync
+        title: Text('Choisir un professeur pour "${demande.matiere}"'),
+        children: sortedTeachers
             .map(
               (t) => SimpleDialogOption(
                 onPressed: () => Navigator.pop(context, t),
-                child: Text(t.user?.nomComplet ?? t.id),
+                child: Row(
+                  children: [
+                    if (enseigneLaMatiere(t))
+                      const Padding(
+                        padding: EdgeInsets.only(right: 6),
+                        child: Icon(Icons.check_circle, size: 16, color: AppColors.success),
+                      ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(t.user?.nomComplet ?? t.id),
+                          Text(
+                            [
+                              if (t.specialites.isNotEmpty) t.specialites.join(', '),
+                              if (t.user?.ville.isNotEmpty ?? false) t.user!.ville,
+                            ].join(' — '),
+                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             )
             .toList(),
