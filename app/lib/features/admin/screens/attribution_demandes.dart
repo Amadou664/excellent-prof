@@ -21,7 +21,8 @@ class AttributionDemandes extends ConsumerStatefulWidget {
   const AttributionDemandes({super.key});
 
   @override
-  ConsumerState<AttributionDemandes> createState() => _AttributionDemandesState();
+  ConsumerState<AttributionDemandes> createState() =>
+      _AttributionDemandesState();
 }
 
 class _AttributionDemandesState extends ConsumerState<AttributionDemandes> {
@@ -73,7 +74,8 @@ class _AttributionDemandesState extends ConsumerState<AttributionDemandes> {
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, index) => _DemandeTile(
                   demande: demandes[index],
-                  onChanged: () => ref.invalidate(demandesAdminProvider(_filter)),
+                  onChanged: () =>
+                      ref.invalidate(demandesAdminProvider(_filter)),
                 ),
               );
             },
@@ -93,9 +95,7 @@ class _DemandeTile extends ConsumerWidget {
   Future<void> _togglePaye(BuildContext context, WidgetRef ref) async {
     int? montant = demande.montant;
     if (!demande.paye) {
-      final controller = TextEditingController(
-        text: montant?.toString() ?? '',
-      );
+      final controller = TextEditingController(text: montant?.toString() ?? '');
       final saisi = await showDialog<int>(
         context: context,
         builder: (context) => AlertDialog(
@@ -103,7 +103,9 @@ class _DemandeTile extends ConsumerWidget {
           content: TextField(
             controller: controller,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Montant (FCFA, optionnel)'),
+            decoration: const InputDecoration(
+              labelText: 'Montant (FCFA, optionnel)',
+            ),
           ),
           actions: [
             TextButton(
@@ -111,7 +113,8 @@ class _DemandeTile extends ConsumerWidget {
               child: const Text('Annuler'),
             ),
             TextButton(
-              onPressed: () => Navigator.pop(context, int.tryParse(controller.text)),
+              onPressed: () =>
+                  Navigator.pop(context, int.tryParse(controller.text)),
               child: const Text('Confirmer'),
             ),
           ],
@@ -120,7 +123,9 @@ class _DemandeTile extends ConsumerWidget {
       if (saisi != null) montant = saisi;
     }
     try {
-      await ref.read(demandeRepositoryProvider).updatePaiement(
+      await ref
+          .read(demandeRepositoryProvider)
+          .updatePaiement(
             demandeId: demande.id,
             paye: !demande.paye,
             montant: montant,
@@ -129,7 +134,9 @@ class _DemandeTile extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Impossible de mettre à jour le paiement.')),
+          const SnackBar(
+            content: Text('Impossible de mettre à jour le paiement.'),
+          ),
         );
       }
     }
@@ -137,7 +144,9 @@ class _DemandeTile extends ConsumerWidget {
 
   Future<void> _assigner(BuildContext context, WidgetRef ref) async {
     final teachersAsync = await ref.read(
-      teachersAdminProvider(const TeacherFilter(statutCandidature: StatutCandidature.validee)).future,
+      teachersAdminProvider(
+        const TeacherFilter(statutCandidature: StatutCandidature.validee),
+      ).future,
     );
     if (!context.mounted) return;
     if (teachersAsync.isEmpty) {
@@ -149,8 +158,9 @@ class _DemandeTile extends ConsumerWidget {
 
     // Les professeurs enseignant la matière demandée remontent en premier, pour eviter a l'admin
     // de devoir se souvenir/deviner qui enseigne quoi parmi potentiellement beaucoup de profs.
-    bool enseigneLaMatiere(TeacherProfileModel t) => t.specialites
-        .any((s) => s.trim().toLowerCase() == demande.matiere.trim().toLowerCase());
+    bool enseigneLaMatiere(TeacherProfileModel t) => t.specialites.any(
+      (s) => s.trim().toLowerCase() == demande.matiere.trim().toLowerCase(),
+    );
     final sortedTeachers = [...teachersAsync]
       ..sort((a, b) {
         final aMatch = enseigneLaMatiere(a);
@@ -159,54 +169,107 @@ class _DemandeTile extends ConsumerWidget {
         return (a.user?.nomComplet ?? '').compareTo(b.user?.nomComplet ?? '');
       });
 
+    bool correspondRecherche(TeacherProfileModel t, String recherche) {
+      if (recherche.isEmpty) return true;
+      final q = recherche.trim().toLowerCase();
+      return (t.user?.nomComplet.toLowerCase().contains(q) ?? false) ||
+          (t.user?.ville.toLowerCase().contains(q) ?? false) ||
+          t.specialites.any((s) => s.toLowerCase().contains(q));
+    }
+
     final selected = await showDialog<TeacherProfileModel>(
       context: context,
-      builder: (context) => SimpleDialog(
-        title: Text('Choisir un professeur pour "${demande.matiere}"'),
-        children: sortedTeachers
-            .map(
-              (t) => SimpleDialogOption(
-                onPressed: () => Navigator.pop(context, t),
-                child: Row(
-                  children: [
-                    if (enseigneLaMatiere(t))
-                      const Padding(
-                        padding: EdgeInsets.only(right: 6),
-                        child: Icon(Icons.check_circle, size: 16, color: AppColors.success),
-                      ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(t.user?.nomComplet ?? t.id),
-                          Text(
-                            [
-                              if (t.specialites.isNotEmpty) t.specialites.join(', '),
-                              if (t.user?.ville.isNotEmpty ?? false) t.user!.ville,
-                            ].join(' — '),
-                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                          ),
-                        ],
-                      ),
+      builder: (context) {
+        var recherche = '';
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final filtered = sortedTeachers
+                .where((t) => correspondRecherche(t, recherche))
+                .toList();
+            return SimpleDialog(
+              title: Text('Choisir un professeur pour "${demande.matiere}"'),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: TextField(
+                    decoration: const InputDecoration(
+                      hintText: 'Rechercher (nom, ville, matière)',
+                      prefixIcon: Icon(Icons.search, size: 20),
+                      isDense: true,
                     ),
-                  ],
+                    onChanged: (v) => setState(() => recherche = v),
+                  ),
                 ),
-              ),
-            )
-            .toList(),
-      ),
+                const SizedBox(height: 8),
+                if (filtered.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    child: Text('Aucun professeur ne correspond.'),
+                  ),
+                ...filtered.map(
+                  (t) => SimpleDialogOption(
+                    onPressed: () => Navigator.pop(context, t),
+                    child: Row(
+                      children: [
+                        if (enseigneLaMatiere(t))
+                          const Padding(
+                            padding: EdgeInsets.only(right: 6),
+                            child: Icon(
+                              Icons.check_circle,
+                              size: 16,
+                              color: AppColors.success,
+                            ),
+                          ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(t.user?.nomComplet ?? t.id),
+                              Text(
+                                [
+                                  if (t.specialites.isNotEmpty)
+                                    t.specialites.join(', '),
+                                  if (t.user?.ville.isNotEmpty ?? false)
+                                    t.user!.ville,
+                                ].join(' — '),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              if (t.nombreAvis > 0)
+                                Text(
+                                  '${t.noteMoyenne.toStringAsFixed(1)} / 5 (${t.nombreAvis} avis)',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
     if (selected == null) return;
     try {
-      await ref.read(demandeRepositoryProvider).assigner(
-            demandeId: demande.id,
-            professeurId: selected.userId,
-          );
+      await ref
+          .read(demandeRepositoryProvider)
+          .assigner(demandeId: demande.id, professeurId: selected.userId);
       onChanged();
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Impossible d\'assigner ce professeur.')),
+          const SnackBar(
+            content: Text('Impossible d\'assigner ce professeur.'),
+          ),
         );
       }
     }
@@ -222,7 +285,12 @@ class _DemandeTile extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Expanded(child: Text(demande.matiere, style: const TextStyle(fontWeight: FontWeight.bold))),
+                Expanded(
+                  child: Text(
+                    demande.matiere,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
                 StatusChip.demandeStatus(demande.status),
               ],
             ),
@@ -234,7 +302,10 @@ class _DemandeTile extends ConsumerWidget {
             if (demande.paye)
               Text(
                 'Payé${demande.montant != null ? ' — ${demande.montant} FCFA' : ''}',
-                style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             const SizedBox(height: 8),
             Wrap(
@@ -253,7 +324,9 @@ class _DemandeTile extends ConsumerWidget {
                       demande.paye ? Icons.money_off : Icons.attach_money,
                       size: 18,
                     ),
-                    label: Text(demande.paye ? 'Marquer non payé' : 'Marquer payé'),
+                    label: Text(
+                      demande.paye ? 'Marquer non payé' : 'Marquer payé',
+                    ),
                   ),
               ],
             ),
