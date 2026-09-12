@@ -15,6 +15,7 @@ router.get("/mine", demandesController.getMine);
 router.get("/", requireRole("ADMIN"), demandesController.list);
 router.patch("/:id/assigner", requireRole("ADMIN"), demandesController.assigner);
 router.patch("/:id/confirmer", requireRole("PROFESSEUR"), demandesController.confirmer);
+router.patch("/:id/refuser", requireRole("PROFESSEUR"), demandesController.refuser);
 // Annulation : proprietaire (parent/etudiant/particulier proprietaire de l'eleve) ou ADMIN —
 // verifie dans demandes.service.annuler.
 router.patch("/:id/annuler", demandesController.annuler);

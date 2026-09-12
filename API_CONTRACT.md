@@ -96,11 +96,11 @@ Body : `{ "token": "string" }` — enregistre le token FCM courant sur `User.fcm
 
 ## /demandes (processus de réservation)
 - `POST /demandes` (PARENT/ETUDIANT/PARTICULIER) body `{ studentId, matiere, modePref, notes? }` -> `status = NOUVELLE`.
-- `GET /demandes/mine` — demandes de l'utilisateur courant (via ses students).
 - `GET /demandes?status=` (ADMIN) — file d'attente à traiter.
 - `GET /demandes/mine` — comportement selon le rôle de l'appelant : pour PARENT/ETUDIANT/PARTICULIER, les demandes de ses students ; pour PROFESSEUR, les demandes où il est `professeurId` (donc `PROF_PROPOSE`, `CONFIRMEE`, `EN_COURS`...) — c'est le seul moyen pour un prof de découvrir une demande qui lui est proposée avant de la confirmer.
-- `PATCH /demandes/:id/assigner` (ADMIN) body `{ "professeurId": "uuid" }` -> `status = PROF_PROPOSE`.
+- `PATCH /demandes/:id/assigner` (ADMIN) body `{ "professeurId": "uuid" }` -> `status = PROF_PROPOSE`. Peut aussi réassigner une demande déjà `PROF_PROPOSE` (ex: après un refus).
 - `PATCH /demandes/:id/confirmer` (PROFESSEUR assigné) -> `status = CONFIRMEE`, crée la première `Seance`.
+- `PATCH /demandes/:id/refuser` (PROFESSEUR assigné) — le professeur ne peut/veut pas prendre cette demande -> `status = NOUVELLE`, `professeurId = null` (retour dans la file d'attente admin), notifie tous les ADMIN.
 - `PATCH /demandes/:id/annuler` (propriétaire ou ADMIN) -> `status = ANNULEE`.
 
 `Demande` :

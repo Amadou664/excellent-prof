@@ -33,9 +33,7 @@ class DemandeRepository {
 
   /// `GET /demandes/mine` — demandes de l'utilisateur courant.
   Future<List<DemandeModel>> mine() async {
-    final data = await _client.unwrap(
-      () => _client.dio.get('/demandes/mine'),
-    );
+    final data = await _client.unwrap(() => _client.dio.get('/demandes/mine'));
     final items = data as List<dynamic>;
     return items
         .map((e) => DemandeModel.fromJson(e as Map<String, dynamic>))
@@ -50,8 +48,8 @@ class DemandeRepository {
         queryParameters: {if (status != null) 'status': status.apiValue},
       ),
     );
-    final items = (data is Map<String, dynamic> ? data['items'] : data)
-        as List<dynamic>;
+    final items =
+        (data is Map<String, dynamic> ? data['items'] : data) as List<dynamic>;
     return items
         .map((e) => DemandeModel.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -75,6 +73,15 @@ class DemandeRepository {
   Future<DemandeModel> confirmer(String demandeId) async {
     final data = await _client.unwrap(
       () => _client.dio.patch('/demandes/$demandeId/confirmer'),
+    );
+    return DemandeModel.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// `PATCH /demandes/:id/refuser` (PROFESSEUR assigné) — remet la demande en
+  /// attente d'un autre professeur.
+  Future<DemandeModel> refuser(String demandeId) async {
+    final data = await _client.unwrap(
+      () => _client.dio.patch('/demandes/$demandeId/refuser'),
     );
     return DemandeModel.fromJson(data as Map<String, dynamic>);
   }

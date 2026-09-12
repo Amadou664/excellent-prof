@@ -18,17 +18,9 @@ import '../../../widgets/status_chip.dart';
 
 /// Espace Professeur — liste des séances (élèves) assignées, plus les
 /// éventuelles demandes qui lui ont été proposées (`PROF_PROPOSE`) en
-/// attente de confirmation.
-///
-/// NOTE (voir README/rapport) : API_CONTRACT.md documente `GET
-/// /demandes/mine` comme "demandes de l'utilisateur courant (via ses
-/// students)", pensé pour PARENT/ETUDIANT/PARTICULIER. Il n'existe pas
-/// d'endpoint documenté pour qu'un PROFESSEUR découvre les demandes qui lui
-/// ont été proposées (`PROF_PROPOSE`) avant de les confirmer via `PATCH
-/// /demandes/:id/confirmer`. On réutilise ici `/demandes/mine` en supposant
-/// qu'il est étendu côté backend pour renvoyer aussi les demandes où
-/// `professeurId == moi` ; si ce n'est pas le cas, cette section reste
-/// simplement vide (dégradation silencieuse, pas de crash).
+/// attente de confirmation ou de refus. Pour un PROFESSEUR, `GET
+/// /demandes/mine` renvoie les demandes où `professeurId == moi` (voir
+/// API_CONTRACT.md).
 class MesElevesScreen extends ConsumerWidget {
   const MesElevesScreen({super.key});
 
@@ -91,7 +83,8 @@ class MesElevesScreen extends ConsumerWidget {
                   ),
                 );
               }
-              final sorted = [...seances]..sort((a, b) => b.dateSeance.compareTo(a.dateSeance));
+              final sorted = [...seances]
+                ..sort((a, b) => b.dateSeance.compareTo(a.dateSeance));
               return Column(
                 children: sorted.map((s) => _SeanceTile(seance: s)).toList(),
               );
@@ -116,7 +109,44 @@ class _DemandeAConfirmerTile extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Impossible de confirmer cette demande.')),
+          const SnackBar(
+            content: Text('Impossible de confirmer cette demande.'),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _refuser(BuildContext context, WidgetRef ref) async {
+    final confirme = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Refuser cette demande ?'),
+        content: Text(
+          'La demande en ${demande.matiere} sera remise en attente pour qu\'un autre '
+          'professeur soit assigné.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Refuser'),
+          ),
+        ],
+      ),
+    );
+    if (confirme != true) return;
+    try {
+      await ref.read(demandeRepositoryProvider).refuser(demande.id);
+      ref.invalidate(demandesMineProvider);
+      ref.invalidate(seancesMineProvider);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossible de refuser cette demande.')),
         );
       }
     }
@@ -137,6 +167,10 @@ class _DemandeAConfirmerTile extends ConsumerWidget {
               tooltip: 'Discuter',
               onPressed: () => context.push(AppRoutes.chatPath(demande.id)),
             ),
+            TextButton(
+              onPressed: () => _refuser(context, ref),
+              child: const Text('Refuser'),
+            ),
             ElevatedButton(
               onPressed: () => _confirmer(context, ref),
               child: const Text('Confirmer'),
@@ -155,11 +189,16 @@ class _SeanceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel = DateFormat('dd/MM/yyyy à HH:mm').format(seance.dateSeance);
+    final dateLabel = DateFormat(
+      'dd/MM/yyyy à HH:mm',
+    ).format(seance.dateSeance);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
-        title: Text(seance.matiere ?? 'Séance', style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(
+          seance.matiere ?? 'Séance',
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         subtitle: Text(dateLabel),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -167,12 +206,14 @@ class _SeanceTile extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.chat_bubble_outline),
               tooltip: 'Discuter',
-              onPressed: () => context.push(AppRoutes.chatPath(seance.demandeId)),
+              onPressed: () =>
+                  context.push(AppRoutes.chatPath(seance.demandeId)),
             ),
             StatusChip.seanceStatut(seance.statut),
           ],
         ),
-        onTap: () => context.push(AppRoutes.teacherCahierTexteEditPath(seance.id)),
+        onTap: () =>
+            context.push(AppRoutes.teacherCahierTexteEditPath(seance.id)),
       ),
     );
   }

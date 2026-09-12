@@ -44,6 +44,12 @@ export const confirmer = asyncHandler(async (req: Request, res: Response) => {
   res.json({ data });
 });
 
+export const refuser = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const data = await demandesService.refuser(req.params.id, req.user);
+  res.json({ data });
+});
+
 export const annuler = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw ApiError.unauthorized();
   const data = await demandesService.annuler(req.params.id, req.user);

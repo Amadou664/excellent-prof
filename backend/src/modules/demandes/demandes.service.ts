@@ -135,6 +135,37 @@ export async function confirmer(demandeId: string, professeur: User, dateSeance?
   return toDemandeResponse(updatedDemande);
 }
 
+export async function refuser(demandeId: string, professeur: User) {
+  const demande = await getDemandeOrThrow(demandeId);
+  if (demande.professeurId !== professeur.id) {
+    throw ApiError.forbidden("Vous n'etes pas le professeur assigne a cette demande");
+  }
+  if (demande.status !== "PROF_PROPOSE") {
+    throw ApiError.conflict(
+      `Impossible de refuser une demande au statut ${demande.status} (attendu: PROF_PROPOSE)`
+    );
+  }
+
+  const updated = await prisma.demande.update({
+    where: { id: demandeId },
+    data: { status: "NOUVELLE", professeurId: null },
+  });
+
+  const admins = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true } });
+  await Promise.all(
+    admins.map((admin) =>
+      sendPushToUser(
+        admin.id,
+        "Demande refusee par un professeur",
+        `${professeur.prenom} ${professeur.nom} a refuse la demande en ${updated.matiere}. ` +
+          "Reassignez-la a un autre professeur."
+      )
+    )
+  );
+
+  return toDemandeResponse(updated);
+}
+
 export async function updatePaiement(
   demandeId: string,
   body: z.infer<typeof updatePaiementSchema>
