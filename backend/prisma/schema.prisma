@@ -258,6 +258,10 @@ model Notification {
   titre     String
   corps     String
   lue       Boolean  @default(false)
+  // Cible optionnelle vers laquelle ouvrir l'app au tap (ex: la conversation concernee) — sans
+  // relation Prisma, meme choix que Signalement.demandeId : aucune Demande n'est jamais
+  // supprimee (seulement annulee), donc pas de risque de reference orpheline a gerer.
+  demandeId String?
   createdAt DateTime @default(now())
 
   @@index([userId])

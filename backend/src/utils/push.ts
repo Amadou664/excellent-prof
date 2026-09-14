@@ -8,11 +8,20 @@ import { prisma } from "../config/prisma";
  * `fcmToken` est connu. Le push peut echouer silencieusement (token perime,
  * Firebase Admin non configure...) sans jamais faire remonter d'erreur a
  * l'appelant : seule la persistance en base est consideree essentielle.
+ *
+ * `demandeId`, quand fourni, permet a l'app d'ouvrir directement la
+ * conversation concernee au tap sur la notification plutot que de se
+ * contenter de la marquer lue.
  */
-export async function sendPushToUser(userId: string, title: string, body: string): Promise<void> {
+export async function sendPushToUser(
+  userId: string,
+  title: string,
+  body: string,
+  demandeId?: string
+): Promise<void> {
   try {
     await prisma.notification.create({
-      data: { userId, titre: title, corps: body },
+      data: { userId, titre: title, corps: body, demandeId },
     });
   } catch (err) {
     // eslint-disable-next-line no-console

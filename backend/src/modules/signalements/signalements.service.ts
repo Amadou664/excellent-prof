@@ -48,7 +48,8 @@ export async function createSignalement(
       sendPushToUser(
         admin.id,
         "Nouveau signalement",
-        `${auteur.prenom} ${auteur.nom} a signalé un utilisateur. Examinez-le dans l'espace admin.`
+        `${auteur.prenom} ${auteur.nom} a signalé un utilisateur. Examinez-le dans l'espace admin.`,
+        body.demandeId
       )
     )
   );

@@ -106,6 +106,7 @@ export function toNotificationResponse(notification: Notification) {
     titre: notification.titre,
     corps: notification.corps,
     lue: notification.lue,
+    demandeId: notification.demandeId,
     createdAt: notification.createdAt.toISOString(),
   };
 }

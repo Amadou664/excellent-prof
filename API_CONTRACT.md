@@ -175,6 +175,14 @@ Body : `{ "token": "string" }` — enregistre le token FCM courant sur `User.fcm
 - `PATCH /avis/:id/statut` (ADMIN) body `{ "statut": "VISIBLE|MASQUE" }`.
 - `DELETE /avis/:id` (ADMIN).
 
+## /notifications (centre de notifications in-app)
+- `GET /notifications/mine` — `{ items: [...], unreadCount: int }`, triées de la plus récente à
+  la plus ancienne. Chaque notification : `{ id, titre, corps, lue, demandeId, createdAt }` —
+  `demandeId` (optionnel) permet à l'app d'ouvrir directement la conversation concernée au tap au
+  lieu de se contenter de marquer la notification lue.
+- `PATCH /notifications/:id/read` — marque une notification lue.
+- `PATCH /notifications/read-all` — marque toutes les notifications de l'utilisateur courant lues.
+
 ## /admin/stats (ADMIN)
 ```json
 {

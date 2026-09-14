@@ -155,14 +155,16 @@ export async function traiterWebhook(transactionId: string | undefined) {
       await sendPushToUser(
         familyOwnerId,
         "Paiement confirme",
-        `Votre paiement pour le cours de ${paiement.demande.matiere} a bien ete recu.`
+        `Votre paiement pour le cours de ${paiement.demande.matiere} a bien ete recu.`,
+        paiement.demandeId
       );
     }
     if (paiement.demande.professeurId) {
       await sendPushToUser(
         paiement.demande.professeurId,
         "Paiement recu",
-        `Le paiement pour le cours de ${paiement.demande.matiere} a ete confirme.`
+        `Le paiement pour le cours de ${paiement.demande.matiere} a ete confirme.`,
+        paiement.demandeId
       );
     }
 
@@ -172,7 +174,8 @@ export async function traiterWebhook(transactionId: string | undefined) {
         sendPushToUser(
           admin.id,
           "Paiement recu",
-          `Un paiement de ${paiement.montant} FCFA a ete confirme pour le cours de ${paiement.demande.matiere}.`
+          `Un paiement de ${paiement.montant} FCFA a ete confirme pour le cours de ${paiement.demande.matiere}.`,
+          paiement.demandeId
         )
       )
     );

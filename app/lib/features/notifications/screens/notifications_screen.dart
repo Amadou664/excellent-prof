@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/notification_model.dart';
 import '../../../providers/notifications_provider.dart';
@@ -27,10 +29,15 @@ class NotificationsScreen extends ConsumerWidget {
             data: (page) => page.unreadCount > 0
                 ? TextButton(
                     onPressed: () async {
-                      await ref.read(notificationRepositoryProvider).markAllRead();
+                      await ref
+                          .read(notificationRepositoryProvider)
+                          .markAllRead();
                       ref.invalidate(notificationsProvider);
                     },
-                    child: const Text('Tout marquer lu', style: TextStyle(color: Colors.white)),
+                    child: const Text(
+                      'Tout marquer lu',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   )
                 : const SizedBox.shrink(),
             orElse: () => const SizedBox.shrink(),
@@ -39,7 +46,10 @@ class NotificationsScreen extends ConsumerWidget {
       ),
       body: notificationsAsync.when(
         loading: () => const LoadingIndicator(),
-        error: (e, _) => ErrorState(error: e, onRetry: () => ref.invalidate(notificationsProvider)),
+        error: (e, _) => ErrorState(
+          error: e,
+          onRetry: () => ref.invalidate(notificationsProvider),
+        ),
         data: (page) {
           if (page.items.isEmpty) {
             return const EmptyState(
@@ -53,7 +63,8 @@ class NotificationsScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(12),
               itemCount: page.items.length,
               separatorBuilder: (_, _) => const SizedBox(height: 4),
-              itemBuilder: (context, index) => _NotificationTile(notification: page.items[index]),
+              itemBuilder: (context, index) =>
+                  _NotificationTile(notification: page.items[index]),
             ),
           );
         },
@@ -70,27 +81,41 @@ class _NotificationTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Card(
-      color: notification.lue ? null : AppColors.paleGold.withValues(alpha: 0.35),
+      color: notification.lue
+          ? null
+          : AppColors.paleGold.withValues(alpha: 0.35),
       child: ListTile(
         leading: Icon(
-          notification.lue ? Icons.notifications_none : Icons.notifications_active,
-          color: notification.lue ? AppColors.textSecondary : AppColors.primaryDarkGreen,
+          notification.lue
+              ? Icons.notifications_none
+              : Icons.notifications_active,
+          color: notification.lue
+              ? AppColors.textSecondary
+              : AppColors.primaryDarkGreen,
         ),
         title: Text(
           notification.titre,
-          style: TextStyle(fontWeight: notification.lue ? FontWeight.normal : FontWeight.bold),
+          style: TextStyle(
+            fontWeight: notification.lue ? FontWeight.normal : FontWeight.bold,
+          ),
         ),
         subtitle: Text(notification.corps),
         trailing: Text(
           DateFormat('dd/MM HH:mm').format(notification.createdAt),
           style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
         ),
-        onTap: notification.lue
-            ? null
-            : () async {
-                await ref.read(notificationRepositoryProvider).markRead(notification.id);
-                ref.invalidate(notificationsProvider);
-              },
+        onTap: () async {
+          if (!notification.lue) {
+            await ref
+                .read(notificationRepositoryProvider)
+                .markRead(notification.id);
+            ref.invalidate(notificationsProvider);
+          }
+          final demandeId = notification.demandeId;
+          if (demandeId != null && context.mounted) {
+            context.push(AppRoutes.chatPath(demandeId));
+          }
+        },
       ),
     );
   }

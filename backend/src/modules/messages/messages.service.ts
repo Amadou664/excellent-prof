@@ -94,7 +94,8 @@ export async function createMessage(
     await sendPushToUser(
       destinataireId,
       "Nouveau message",
-      `${user.prenom} : ${body.contenu.slice(0, 80)}`
+      `${user.prenom} : ${body.contenu.slice(0, 80)}`,
+      demandeId
     );
   }
 

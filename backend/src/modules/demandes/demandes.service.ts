@@ -93,7 +93,8 @@ export async function assigner(demandeId: string, professeurId: string) {
   await sendPushToUser(
     professeurId,
     "Nouvelle demande",
-    `Une demande de cours en ${updated.matiere} vous a ete proposee.`
+    `Une demande de cours en ${updated.matiere} vous a ete proposee.`,
+    updated.id
   );
 
   return toDemandeResponse(updated);
@@ -128,7 +129,8 @@ export async function confirmer(demandeId: string, professeur: User, dateSeance?
     await sendPushToUser(
       familyOwnerId,
       "Cours confirme",
-      `Le professeur a confirme votre demande en ${updatedDemande.matiere}.`
+      `Le professeur a confirme votre demande en ${updatedDemande.matiere}.`,
+      updatedDemande.id
     );
   }
 
@@ -158,7 +160,8 @@ export async function refuser(demandeId: string, professeur: User) {
         admin.id,
         "Demande refusee par un professeur",
         `${professeur.prenom} ${professeur.nom} a refuse la demande en ${updated.matiere}. ` +
-          "Reassignez-la a un autre professeur."
+          "Reassignez-la a un autre professeur.",
+        updated.id
       )
     )
   );
@@ -190,14 +193,16 @@ export async function updatePaiement(
         familyOwnerId,
         "Paiement confirme",
         `Votre paiement pour le cours de ${updated.matiere} a ete confirme. Vous pouvez ` +
-          "maintenant discuter avec le professeur."
+          "maintenant discuter avec le professeur.",
+        updated.id
       );
     } else if (avant.montant !== updated.montant && updated.montant && !updated.paye) {
       await sendPushToUser(
         familyOwnerId,
         "Prix fixe pour votre demande",
         `Le prix de votre demande en ${updated.matiere} est de ${updated.montant} FCFA. ` +
-          "Payez pour debloquer la discussion avec le professeur."
+          "Payez pour debloquer la discussion avec le professeur.",
+        updated.id
       );
     }
   }
