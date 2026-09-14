@@ -142,6 +142,46 @@ class _DemandeTile extends ConsumerWidget {
     }
   }
 
+  Future<void> _fixerPrix(BuildContext context, WidgetRef ref) async {
+    final controller = TextEditingController();
+    final saisi = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Fixer le prix de cette demande'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Montant (FCFA)'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(context, int.tryParse(controller.text)),
+            child: const Text('Confirmer'),
+          ),
+        ],
+      ),
+    );
+    if (saisi == null) return;
+    try {
+      await ref
+          .read(demandeRepositoryProvider)
+          .updatePaiement(demandeId: demande.id, paye: false, montant: saisi);
+      onChanged();
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossible de fixer le prix.')),
+        );
+      }
+    }
+  }
+
   Future<void> _assigner(BuildContext context, WidgetRef ref) async {
     final teachersAsync = await ref.read(
       teachersAdminProvider(
@@ -299,11 +339,13 @@ class _DemandeTile extends ConsumerWidget {
               'Créée le ${DateFormat('dd/MM/yyyy').format(demande.createdAt)}',
               style: const TextStyle(color: Colors.grey, fontSize: 12),
             ),
-            if (demande.paye)
+            if (demande.montant != null)
               Text(
-                'Payé${demande.montant != null ? ' — ${demande.montant} FCFA' : ''}',
-                style: const TextStyle(
-                  color: Colors.green,
+                demande.paye
+                    ? 'Payé — ${demande.montant} FCFA'
+                    : '${demande.montant} FCFA à payer (en attente)',
+                style: TextStyle(
+                  color: demande.paye ? Colors.green : Colors.orange[800],
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -317,7 +359,13 @@ class _DemandeTile extends ConsumerWidget {
                     icon: const Icon(Icons.person_add_alt),
                     label: const Text('Assigner un professeur'),
                   ),
-                if (demande.professeurId != null)
+                if (demande.professeurId != null && demande.montant == null)
+                  OutlinedButton.icon(
+                    onPressed: () => _fixerPrix(context, ref),
+                    icon: const Icon(Icons.sell_outlined, size: 18),
+                    label: const Text('Fixer le prix'),
+                  ),
+                if (demande.professeurId != null && demande.montant != null)
                   OutlinedButton.icon(
                     onPressed: () => _togglePaye(context, ref),
                     icon: Icon(
@@ -325,7 +373,9 @@ class _DemandeTile extends ConsumerWidget {
                       size: 18,
                     ),
                     label: Text(
-                      demande.paye ? 'Marquer non payé' : 'Marquer payé',
+                      demande.paye
+                          ? 'Marquer non payé'
+                          : 'Marquer payé (manuel)',
                     ),
                   ),
               ],

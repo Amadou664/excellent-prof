@@ -22,11 +22,39 @@ import '../../avis/widgets/avis_form.dart';
 /// Réutilisé par l'espace Parent et l'espace Étudiant/Particulier (les deux
 /// utilisent la même route `/demandes/mine` scoping automatiquement côté
 /// backend selon l'utilisateur connecté).
-class DemandesListView extends ConsumerWidget {
+class DemandesListView extends ConsumerStatefulWidget {
   const DemandesListView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DemandesListView> createState() => _DemandesListViewState();
+}
+
+class _DemandesListViewState extends ConsumerState<DemandesListView>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Après un paiement CinetPay, l'utilisateur revient sur cette page depuis l'onglet de
+    // paiement (ou l'app mobile reprend le premier plan) : on rafraîchit automatiquement au
+    // lieu d'attendre que l'utilisateur pense à tirer vers le bas.
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(demandesMineProvider);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final demandesAsync = ref.watch(demandesMineProvider);
 
     return demandesAsync.when(
@@ -42,14 +70,16 @@ class DemandesListView extends ConsumerWidget {
             icon: Icons.assignment_outlined,
           );
         }
-        final sorted = [...demandes]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        final sorted = [...demandes]
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
         return RefreshIndicator(
           onRefresh: () async => ref.invalidate(demandesMineProvider),
           child: ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: sorted.length,
             separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, index) => _DemandeTile(demande: sorted[index]),
+            itemBuilder: (context, index) =>
+                _DemandeTile(demande: sorted[index]),
           ),
         );
       },
@@ -69,8 +99,14 @@ class _DemandeTile extends ConsumerWidget {
         title: const Text('Annuler la demande ?'),
         content: Text('Voulez-vous annuler la demande "${demande.matiere}" ?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Non')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Oui, annuler')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Non'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Oui, annuler'),
+          ),
         ],
       ),
     );
@@ -89,13 +125,18 @@ class _DemandeTile extends ConsumerWidget {
 
   Future<void> _payer(BuildContext context, WidgetRef ref) async {
     try {
-      final paymentUrl = await ref.read(paiementRepositoryProvider).initier(demandeId: demande.id);
-      await launchUrl(Uri.parse(paymentUrl), mode: LaunchMode.externalApplication);
+      final paymentUrl = await ref
+          .read(paiementRepositoryProvider)
+          .initier(demandeId: demande.id);
+      await launchUrl(
+        Uri.parse(paymentUrl),
+        mode: LaunchMode.externalApplication,
+      );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Terminez le paiement dans la page ouverte, puis revenez ici et tirez vers le bas pour actualiser.',
+              'Terminez le paiement dans la page ouverte, puis revenez ici — la mise à jour est automatique.',
             ),
             duration: Duration(seconds: 6),
           ),
@@ -104,7 +145,9 @@ class _DemandeTile extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Impossible de lancer le paiement. Réessayez.")),
+          const SnackBar(
+            content: Text("Impossible de lancer le paiement. Réessayez."),
+          ),
         );
       }
     }
@@ -147,7 +190,10 @@ class _DemandeTile extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     demande.matiere,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
                 StatusChip.demandeStatus(demande.status),
@@ -186,7 +232,8 @@ class _DemandeTile extends ConsumerWidget {
             Wrap(
               spacing: 8,
               children: [
-                if (demande.professeurId != null && demande.status != DemandeStatus.annulee)
+                if (demande.professeurId != null &&
+                    demande.status != DemandeStatus.annulee)
                   OutlinedButton.icon(
                     onPressed: () =>
                         context.push(AppRoutes.chatPath(demande.id)),
@@ -206,7 +253,8 @@ class _DemandeTile extends ConsumerWidget {
                     onPressed: () => _annuler(context, ref),
                     child: const Text('Annuler'),
                   ),
-                if (demande.status == DemandeStatus.terminee && demande.professeurId != null)
+                if (demande.status == DemandeStatus.terminee &&
+                    demande.professeurId != null)
                   ElevatedButton.icon(
                     onPressed: () => _laisserUnAvis(context),
                     icon: const Icon(Icons.star_outline, size: 18),
