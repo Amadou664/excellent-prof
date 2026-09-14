@@ -43,9 +43,29 @@ function assertConversationOuverte(
   }
 }
 
+/**
+ * Des qu'un prix est fixe sur la demande (voir PATCH /demandes/:id/paiement), la famille et le
+ * professeur ne peuvent plus se contacter tant qu'il n'est pas paye : c'est le paiement, pas
+ * l'admin manuellement, qui declenche l'acces. Sans prix fixe (montant == null), rien a bloquer.
+ * L'ADMIN passe toujours, pour pouvoir intervenir en cas de litige.
+ */
+function assertPaiementEffectue(
+  demande: Awaited<ReturnType<typeof getDemandeWithParticipantsOrThrow>>,
+  user: User
+) {
+  if (user.role === "ADMIN") return;
+  if (demande.montant !== null && !demande.paye) {
+    throw ApiError.conflict(
+      "Le paiement de cette demande doit d'abord etre confirme pour pouvoir echanger des messages.",
+      "PAIEMENT_REQUIS"
+    );
+  }
+}
+
 export async function listMessages(demandeId: string, user: User) {
   const demande = await getDemandeWithParticipantsOrThrow(demandeId);
   assertParticipant(demande, user);
+  assertPaiementEffectue(demande, user);
 
   const messages = await prisma.message.findMany({
     where: { demandeId },
@@ -62,6 +82,7 @@ export async function createMessage(
   const demande = await getDemandeWithParticipantsOrThrow(demandeId);
   assertParticipant(demande, user);
   assertConversationOuverte(demande);
+  assertPaiementEffectue(demande, user);
 
   const message = await prisma.message.create({
     data: { demandeId, auteurId: user.id, contenu: body.contenu },

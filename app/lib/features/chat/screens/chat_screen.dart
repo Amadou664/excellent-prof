@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../providers/auth_providers.dart';
 import '../../../providers/messages_provider.dart';
@@ -67,17 +68,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               maxLines: 3,
               autofocus: true,
               decoration: const InputDecoration(
-                hintText: 'Ex : comportement inapproprié, demande de paiement suspecte...',
+                hintText:
+                    'Ex : comportement inapproprié, demande de paiement suspecte...',
                 border: OutlineInputBorder(),
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Envoyer', style: TextStyle(color: AppColors.error)),
+            child: const Text(
+              'Envoyer',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
@@ -87,25 +95,32 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (motif.length < 5) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Merci de décrire le problème (5 caractères minimum).')),
+          const SnackBar(
+            content: Text(
+              'Merci de décrire le problème (5 caractères minimum).',
+            ),
+          ),
         );
       }
       return;
     }
     try {
-      await ref.read(signalementRepositoryProvider).create(
-            demandeId: widget.demandeId,
-            motif: motif,
-          );
+      await ref
+          .read(signalementRepositoryProvider)
+          .create(demandeId: widget.demandeId, motif: motif);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Signalement envoyé. Merci de nous avoir prévenus.')),
+          const SnackBar(
+            content: Text('Signalement envoyé. Merci de nous avoir prévenus.'),
+          ),
         );
       }
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Échec de l'envoi du signalement. Réessayez.")),
+          const SnackBar(
+            content: Text("Échec de l'envoi du signalement. Réessayez."),
+          ),
         );
       }
     }
@@ -116,10 +131,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (contenu.isEmpty || _isSending) return;
     setState(() => _isSending = true);
     try {
-      await ref.read(demandeRepositoryProvider).sendMessage(
-            demandeId: widget.demandeId,
-            contenu: contenu,
-          );
+      await ref
+          .read(demandeRepositoryProvider)
+          .sendMessage(demandeId: widget.demandeId, contenu: contenu);
       _controller.clear();
       ref.invalidate(messagesProvider(widget.demandeId));
     } catch (_) {
@@ -133,10 +147,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  bool _estBloquePaiement(AsyncValue<List<dynamic>> async) {
+    final err = async.error;
+    return err is ApiException && err.code == 'PAIEMENT_REQUIS';
+  }
+
   @override
   Widget build(BuildContext context) {
     final messagesAsync = ref.watch(messagesProvider(widget.demandeId));
     final myId = ref.watch(currentUserProvider).valueOrNull?.id;
+    final bloquePaiement = _estBloquePaiement(messagesAsync);
 
     return Scaffold(
       appBar: AppBar(
@@ -154,14 +174,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           Expanded(
             child: messagesAsync.when(
               loading: () => const LoadingIndicator(),
-              error: (e, _) => ErrorState(
-                error: e,
-                onRetry: () => ref.invalidate(messagesProvider(widget.demandeId)),
-              ),
+              error: (e, _) {
+                if (e is ApiException && e.code == 'PAIEMENT_REQUIS') {
+                  return const _PaiementRequisView();
+                }
+                return ErrorState(
+                  error: e,
+                  onRetry: () =>
+                      ref.invalidate(messagesProvider(widget.demandeId)),
+                );
+              },
               data: (messages) {
                 if (messages.isEmpty) {
                   return const EmptyState(
-                    message: 'Aucun message pour le moment. Écrivez le premier !',
+                    message:
+                        'Aucun message pour le moment. Écrivez le premier !',
                     icon: Icons.chat_bubble_outline,
                   );
                 }
@@ -173,8 +200,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     final message = messages[index];
                     final isMine = message.auteurId == myId;
                     return Align(
-                      alignment:
-                          isMine ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment: isMine
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                       child: Container(
                         margin: const EdgeInsets.symmetric(vertical: 4),
                         padding: const EdgeInsets.symmetric(
@@ -201,7 +229,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              DateFormat('dd/MM HH:mm').format(message.createdAt),
+                              DateFormat(
+                                'dd/MM HH:mm',
+                              ).format(message.createdAt),
                               style: TextStyle(
                                 fontSize: 10,
                                 color: isMine
@@ -218,47 +248,94 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               },
             ),
           ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      minLines: 1,
-                      maxLines: 4,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _send(),
-                      decoration: const InputDecoration(
-                        hintText: 'Écrire un message...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(24)),
-                        ),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
+          if (!bloquePaiement)
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _controller,
+                        minLines: 1,
+                        maxLines: 4,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _send(),
+                        decoration: const InputDecoration(
+                          hintText: 'Écrire un message...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(24)),
+                          ),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: _isSending ? null : _send,
-                    icon: _isSending
-                        ? const SizedBox(
-                            height: 16,
-                            width: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.send),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      onPressed: _isSending ? null : _send,
+                      icon: _isSending
+                          ? const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.send),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
         ],
+      ),
+    );
+  }
+}
+
+/// Affiché à la place des messages tant que le paiement de la demande n'est
+/// pas confirmé (voir `PAIEMENT_REQUIS`, messages.service.ts côté serveur) :
+/// la famille et le professeur ne peuvent pas se contacter avant que
+/// l'accès ne soit débloqué par le paiement.
+class _PaiementRequisView extends StatelessWidget {
+  const _PaiementRequisView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.lock_outline,
+              size: 48,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Discussion verrouillée',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Le paiement de cette demande doit d\'abord être confirmé pour pouvoir '
+              'échanger des messages avec le professeur.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.payment, size: 18),
+              label: const Text('Retour pour payer'),
+            ),
+          ],
+        ),
       ),
     );
   }

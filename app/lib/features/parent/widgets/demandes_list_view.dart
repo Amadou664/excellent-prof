@@ -237,8 +237,17 @@ class _DemandeTile extends ConsumerWidget {
                   OutlinedButton.icon(
                     onPressed: () =>
                         context.push(AppRoutes.chatPath(demande.id)),
-                    icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                    label: const Text('Discuter'),
+                    icon: Icon(
+                      demande.montant != null && !demande.paye
+                          ? Icons.lock_outline
+                          : Icons.chat_bubble_outline,
+                      size: 18,
+                    ),
+                    label: Text(
+                      demande.montant != null && !demande.paye
+                          ? 'Discuter (verrouillé)'
+                          : 'Discuter',
+                    ),
                   ),
                 if (demande.montant != null &&
                     !demande.paye &&
