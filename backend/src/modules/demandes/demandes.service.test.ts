@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { User } from "@prisma/client";
 import { prismaMock } from "../../test/setup";
-import { refuser } from "./demandes.service";
+import { refuser, updatePaiement } from "./demandes.service";
 
 function makeUser(overrides: Partial<User> = {}): User {
   return {
@@ -88,5 +88,69 @@ describe("refuser", () => {
     prismaMock.demande.findUnique.mockResolvedValue(null);
 
     await expect(refuser("inconnue", makeUser())).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe("updatePaiement", () => {
+  it("notifie la famille quand un prix est fixe pour la premiere fois", async () => {
+    prismaMock.demande.findUnique.mockResolvedValue(
+      makeDemande({ montant: null, paye: false }) as never
+    );
+    prismaMock.demande.update.mockResolvedValue(
+      makeDemande({ montant: 25000, paye: false }) as never
+    );
+    prismaMock.student.findUnique.mockResolvedValue({
+      id: "student-1",
+      parentId: "parent-1",
+      userId: null,
+    } as never);
+
+    await updatePaiement("demande-1", { paye: false, montant: 25000 });
+
+    expect(prismaMock.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId: "parent-1" }),
+      })
+    );
+  });
+
+  it("notifie la famille quand le paiement est confirme", async () => {
+    prismaMock.demande.findUnique.mockResolvedValue(
+      makeDemande({ montant: 25000, paye: false }) as never
+    );
+    prismaMock.demande.update.mockResolvedValue(
+      makeDemande({ montant: 25000, paye: true }) as never
+    );
+    prismaMock.student.findUnique.mockResolvedValue({
+      id: "student-1",
+      parentId: "parent-1",
+      userId: null,
+    } as never);
+
+    await updatePaiement("demande-1", { paye: true, montant: 25000 });
+
+    expect(prismaMock.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId: "parent-1" }),
+      })
+    );
+  });
+
+  it("ne notifie pas si rien de pertinent n'a change", async () => {
+    prismaMock.demande.findUnique.mockResolvedValue(
+      makeDemande({ montant: 25000, paye: true }) as never
+    );
+    prismaMock.demande.update.mockResolvedValue(
+      makeDemande({ montant: 25000, paye: true }) as never
+    );
+    prismaMock.student.findUnique.mockResolvedValue({
+      id: "student-1",
+      parentId: "parent-1",
+      userId: null,
+    } as never);
+
+    await updatePaiement("demande-1", { paye: true, montant: 25000 });
+
+    expect(prismaMock.notification.create).not.toHaveBeenCalled();
   });
 });

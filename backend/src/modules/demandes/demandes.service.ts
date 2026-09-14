@@ -170,7 +170,7 @@ export async function updatePaiement(
   demandeId: string,
   body: z.infer<typeof updatePaiementSchema>
 ) {
-  await getDemandeOrThrow(demandeId);
+  const avant = await getDemandeOrThrow(demandeId);
   const updated = await prisma.demande.update({
     where: { id: demandeId },
     data: {
@@ -178,6 +178,30 @@ export async function updatePaiement(
       ...(body.montant !== undefined ? { montant: body.montant } : {}),
     },
   });
+
+  // La famille doit savoir qu'elle a quelque chose a payer (sinon elle ne comprend pas pourquoi
+  // la messagerie reste verrouillee, voir messages.service.assertPaiementEffectue), et qu'un
+  // paiement enregistre manuellement (hors CinetPay) a bien debloque l'acces.
+  const student = await prisma.student.findUnique({ where: { id: updated.studentId } });
+  const familyOwnerId = student?.parentId ?? student?.userId;
+  if (familyOwnerId) {
+    if (!avant.paye && updated.paye) {
+      await sendPushToUser(
+        familyOwnerId,
+        "Paiement confirme",
+        `Votre paiement pour le cours de ${updated.matiere} a ete confirme. Vous pouvez ` +
+          "maintenant discuter avec le professeur."
+      );
+    } else if (avant.montant !== updated.montant && updated.montant && !updated.paye) {
+      await sendPushToUser(
+        familyOwnerId,
+        "Prix fixe pour votre demande",
+        `Le prix de votre demande en ${updated.matiere} est de ${updated.montant} FCFA. ` +
+          "Payez pour debloquer la discussion avec le professeur."
+      );
+    }
+  }
+
   return toDemandeResponse(updated);
 }
 
