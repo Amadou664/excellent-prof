@@ -167,3 +167,12 @@ Body : `{ "token": "string" }` — enregistre le token FCM courant sur `User.fcm
 ```
 (Chiffre d'affaires / taux de fidélisation : champs prévus mais calcul réel hors scope
 tant que le paiement n'est pas défini — renvoyer 0 avec un TODO explicite dans le code.)
+
+## /activity (journal d'activité, ADMIN)
+- `GET /activity?limit=&cursor=&userId=` (ADMIN) — une ligne par requête API reçue par le
+  serveur (toutes routes confondues) plus les vues d'écran envoyées par l'app, triées de la plus
+  récente à la plus ancienne. `{ id, userId, utilisateur, role, method, path, statusCode,
+  createdAt }`. `method` vaut `"VUE"` pour une navigation d'écran (pas une vraie requête HTTP).
+- `POST /activity` (tout utilisateur connecté) body `{ "ecran": "string" }` — signale que
+  l'utilisateur courant a ouvert cet écran ; n'est pas visible autrement puisqu'aucune requête
+  API dédiée n'accompagne une simple navigation côté app.

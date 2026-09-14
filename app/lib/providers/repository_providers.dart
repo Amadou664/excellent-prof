@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/network/api_client.dart';
+import '../repositories/activity_repository.dart';
 import '../repositories/admin_repository.dart';
 import '../repositories/annonce_repository.dart';
 import '../repositories/auth_repository.dart';
@@ -72,4 +73,8 @@ final signalementRepositoryProvider = Provider<SignalementRepository>(
 
 final paiementRepositoryProvider = Provider<PaiementRepository>(
   (ref) => PaiementRepository(ref.watch(apiClientProvider)),
+);
+
+final activityRepositoryProvider = Provider<ActivityRepository>(
+  (ref) => ActivityRepository(ref.watch(apiClientProvider)),
 );

@@ -8,6 +8,7 @@ import '../../../widgets/error_state.dart';
 import '../../../widgets/loading_indicator.dart';
 import '../../../widgets/notification_bell_button.dart';
 import '../../../widgets/profile_summary_tab.dart';
+import '../../../widgets/session_timer_bar.dart';
 import '../widgets/demandes_list_view.dart';
 import 'mes_enfants_screen.dart';
 
@@ -17,7 +18,8 @@ class ParentDashboardScreen extends ConsumerStatefulWidget {
   const ParentDashboardScreen({super.key});
 
   @override
-  ConsumerState<ParentDashboardScreen> createState() => _ParentDashboardScreenState();
+  ConsumerState<ParentDashboardScreen> createState() =>
+      _ParentDashboardScreenState();
 }
 
 class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
@@ -33,6 +35,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
       appBar: AppBar(
         title: Text(_titles[_index]),
         actions: const [NotificationBellButton()],
+        bottom: const SessionTimerBar(),
       ),
       body: IndexedStack(
         index: _index,
@@ -56,9 +59,18 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
         currentIndex: _index,
         onTap: (i) => setState(() => _index = i),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.family_restroom), label: 'Enfants'),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Demandes'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profil'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.family_restroom),
+            label: 'Enfants',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment_outlined),
+            label: 'Demandes',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: 'Profil',
+          ),
         ],
       ),
     );

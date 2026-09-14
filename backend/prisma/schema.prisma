@@ -130,44 +130,46 @@ model User {
   childStudents Student[] @relation("StudentParent")
   selfStudent   Student[] @relation("StudentSelf")
 
-  demandesAssignees Demande[] @relation("DemandeProfesseur")
-  seancesEnTantQueProf Seance[] @relation("SeanceProfesseur")
+  demandesAssignees    Demande[] @relation("DemandeProfesseur")
+  seancesEnTantQueProf Seance[]  @relation("SeanceProfesseur")
 
   avisRecus  Avis[] @relation("AvisProfesseur")
   avisEcrits Avis[] @relation("AvisAuteur")
 
-  messagesEnvoyes Message[] @relation("MessageAuteur")
+  messagesEnvoyes Message[]      @relation("MessageAuteur")
   notifications   Notification[]
 
   signalementsEmis  Signalement[] @relation("SignalementAuteur")
   signalementsRecus Signalement[] @relation("SignalementCible")
+
+  activityLogs ActivityLog[]
 
   @@index([role])
   @@index([status])
 }
 
 model TeacherProfile {
-  id                 String            @id @default(uuid())
-  userId             String            @unique
-  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  specialites        String[]
-  diplomesUrls       String[]
+  id                String            @id @default(uuid())
+  userId            String            @unique
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialites       String[]
+  diplomesUrls      String[]
   // Piece d'identite officielle, distincte des diplomes : verification de securite minimale
   // avant tout cours a domicile aupres de mineurs (voir conditions.html). Un admin doit la
   // consulter avant de passer statutCandidature a VALIDEE.
-  pieceIdentiteUrl   String?
+  pieceIdentiteUrl  String?
   // Note libre laissee par l'admin lors de la verification (ID controlee, reference contactee,
   // impression d'entretien...) : sert de trace/audit sur la decision de validation.
-  notesVerification  String            @default("")
-  bio                String            @default("")
-  zoneGeo            String            @default("")
+  notesVerification String            @default("")
+  bio               String            @default("")
+  zoneGeo           String            @default("")
   // Ex: { "lundi": ["18:00-20:00"], "mardi": [] }
-  disponibilites     Json              @default("{}")
-  statutCandidature  StatutCandidature @default(SOUMISE)
-  noteMoyenne        Float             @default(0)
-  nombreAvis         Int               @default(0)
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  disponibilites    Json              @default("{}")
+  statutCandidature StatutCandidature @default(SOUMISE)
+  noteMoyenne       Float             @default(0)
+  nombreAvis        Int               @default(0)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   @@index([statutCandidature])
 }
@@ -186,8 +188,8 @@ model Student {
   userId String?
   user   User?   @relation("StudentSelf", fields: [userId], references: [id], onDelete: Cascade)
 
-  demandes      Demande[]
-  inscriptions  InscriptionCoursPourTous[]
+  demandes     Demande[]
+  inscriptions InscriptionCoursPourTous[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -197,13 +199,13 @@ model Student {
 }
 
 model Demande {
-  id          String        @id @default(uuid())
-  studentId   String
-  student     Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  matiere     String
-  modePref    ModePref
-  status      DemandeStatus @default(NOUVELLE)
-  notes       String?
+  id        String        @id @default(uuid())
+  studentId String
+  student   Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  matiere   String
+  modePref  ModePref
+  status    DemandeStatus @default(NOUVELLE)
+  notes     String?
 
   // Suivi de paiement manuel (pas de passerelle de paiement integree — voir rapport de
   // livraison). Renseigne/bascule par un ADMIN via PATCH /demandes/:id/paiement, pour tracer les
@@ -313,9 +315,9 @@ model Fichier {
 }
 
 model Seance {
-  id          String       @id @default(uuid())
-  demandeId   String
-  demande     Demande      @relation(fields: [demandeId], references: [id], onDelete: Cascade)
+  id        String  @id @default(uuid())
+  demandeId String
+  demande   Demande @relation(fields: [demandeId], references: [id], onDelete: Cascade)
 
   // Denormalise depuis demande.professeurId au moment de la creation, pour permettre
   // `GET /seances/mine` (cote PROFESSEUR) sans devoir remonter la relation a chaque requete.
@@ -362,16 +364,16 @@ model Annonce {
 }
 
 model CoursPourTous {
-  id                 String   @id @default(uuid())
-  titre              String
-  description        String
-  matiere            String
-  dateDebut          DateTime
-  dateFin            DateTime
-  tarif              Int
-  placesDisponibles  Int
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                String   @id @default(uuid())
+  titre             String
+  description       String
+  matiere           String
+  dateDebut         DateTime
+  dateFin           DateTime
+  tarif             Int
+  placesDisponibles Int
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   inscriptions InscriptionCoursPourTous[]
 
@@ -412,4 +414,23 @@ model Avis {
 
   @@index([professeurId])
   @@index([statut])
+}
+
+// Journal d'activite (ADMIN uniquement) : une ligne par requete API recue par le serveur, plus
+// les "vues d'ecran" envoyees explicitement par l'application (navigation, qui ne passe par
+// aucune requete API dediee). userId reste optionnel (une tentative de connexion ratee n'a pas
+// encore d'utilisateur identifie) et n'est jamais supprime en cascade avec le compte : l'historique
+// doit survivre a la suppression d'un compte (voir suppression de compte utilisateur).
+model ActivityLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  role       Role?
+  method     String
+  path       String
+  statusCode Int?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
 }

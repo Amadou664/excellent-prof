@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../providers/firebase_providers.dart';
 import '../../../widgets/notification_bell_button.dart';
+import '../../../widgets/session_timer_bar.dart';
 import 'admin_dashboard_stats.dart';
 import 'attribution_demandes.dart';
+import 'gestion_activite.dart';
 import 'gestion_annonces.dart';
 import 'gestion_cours_pour_tous.dart';
 import 'gestion_paiements.dart';
@@ -21,29 +23,47 @@ class _AdminSection {
   const _AdminSection(this.title, this.icon, this.screen);
 }
 
-/// Coquille de l'espace Admin : navigation par tiroir (Drawer) entre les 9
+/// Coquille de l'espace Admin : navigation par tiroir (Drawer) entre les 10
 /// sections (stats, utilisateurs, candidatures, demandes, annonces, cours
-/// pour tous, avis, signalements, paiements).
+/// pour tous, avis, signalements, paiements, activité).
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});
 
   @override
-  ConsumerState<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+  ConsumerState<AdminDashboardScreen> createState() =>
+      _AdminDashboardScreenState();
 }
 
 class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   int _index = 0;
 
   static const _sections = [
-    _AdminSection('Statistiques', Icons.dashboard_outlined, AdminDashboardStats()),
+    _AdminSection(
+      'Statistiques',
+      Icons.dashboard_outlined,
+      AdminDashboardStats(),
+    ),
     _AdminSection('Utilisateurs', Icons.people_outline, GestionUtilisateurs()),
-    _AdminSection('Candidatures profs', Icons.workspace_premium_outlined, ValidationEnseignants()),
-    _AdminSection('Demandes de cours', Icons.assignment_outlined, AttributionDemandes()),
+    _AdminSection(
+      'Candidatures profs',
+      Icons.workspace_premium_outlined,
+      ValidationEnseignants(),
+    ),
+    _AdminSection(
+      'Demandes de cours',
+      Icons.assignment_outlined,
+      AttributionDemandes(),
+    ),
     _AdminSection('Annonces', Icons.campaign_outlined, GestionAnnonces()),
-    _AdminSection('Cours pour tous', Icons.diversity_3_outlined, GestionCoursPourTous()),
+    _AdminSection(
+      'Cours pour tous',
+      Icons.diversity_3_outlined,
+      GestionCoursPourTous(),
+    ),
     _AdminSection('Modération avis', Icons.reviews_outlined, ModerationAvis()),
     _AdminSection('Signalements', Icons.flag_outlined, GestionSignalements()),
     _AdminSection('Paiements', Icons.payment_outlined, GestionPaiements()),
+    _AdminSection("Activité", Icons.history_outlined, GestionActivite()),
   ];
 
   @override
@@ -52,6 +72,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       appBar: AppBar(
         title: Text(_sections[_index].title),
         actions: const [NotificationBellButton()],
+        bottom: const SessionTimerBar(),
       ),
       drawer: Drawer(
         child: SafeArea(
@@ -68,7 +89,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     const Expanded(
                       child: Text(
                         'Administration',
-                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
@@ -94,7 +119,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.logout, color: AppColors.error),
-                title: const Text('Se déconnecter', style: TextStyle(color: AppColors.error)),
+                title: const Text(
+                  'Se déconnecter',
+                  style: TextStyle(color: AppColors.error),
+                ),
                 onTap: () => ref.read(authServiceProvider).signOut(),
               ),
             ],

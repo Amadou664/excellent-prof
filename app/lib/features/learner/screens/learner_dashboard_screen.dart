@@ -8,6 +8,7 @@ import '../../../widgets/error_state.dart';
 import '../../../widgets/loading_indicator.dart';
 import '../../../widgets/notification_bell_button.dart';
 import '../../../widgets/profile_summary_tab.dart';
+import '../../../widgets/session_timer_bar.dart';
 import '../../parent/widgets/demandes_list_view.dart';
 import 'mon_cahier_texte_screen.dart';
 
@@ -17,10 +18,12 @@ class LearnerDashboardScreen extends ConsumerStatefulWidget {
   const LearnerDashboardScreen({super.key});
 
   @override
-  ConsumerState<LearnerDashboardScreen> createState() => _LearnerDashboardScreenState();
+  ConsumerState<LearnerDashboardScreen> createState() =>
+      _LearnerDashboardScreenState();
 }
 
-class _LearnerDashboardScreenState extends ConsumerState<LearnerDashboardScreen> {
+class _LearnerDashboardScreenState
+    extends ConsumerState<LearnerDashboardScreen> {
   int _index = 0;
 
   static const _titles = ['Mon cahier de texte', 'Mes demandes', 'Mon profil'];
@@ -33,6 +36,7 @@ class _LearnerDashboardScreenState extends ConsumerState<LearnerDashboardScreen>
       appBar: AppBar(
         title: Text(_titles[_index]),
         actions: const [NotificationBellButton()],
+        bottom: const SessionTimerBar(),
       ),
       body: IndexedStack(
         index: _index,
@@ -62,9 +66,18 @@ class _LearnerDashboardScreenState extends ConsumerState<LearnerDashboardScreen>
         currentIndex: _index,
         onTap: (i) => setState(() => _index = i),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.menu_book_outlined), label: 'Cahier'),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), label: 'Demandes'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profil'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu_book_outlined),
+            label: 'Cahier',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment_outlined),
+            label: 'Demandes',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: 'Profil',
+          ),
         ],
       ),
     );

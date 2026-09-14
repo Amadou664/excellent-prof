@@ -21,6 +21,8 @@ import filesRoutes from "./modules/files/files.routes";
 import notificationsRoutes from "./modules/notifications/notifications.routes";
 import signalementsRoutes from "./modules/signalements/signalements.routes";
 import paiementsRoutes from "./modules/paiements/paiements.routes";
+import activityRoutes from "./modules/activity/activity.routes";
+import * as activityService from "./modules/activity/activity.service";
 import { prisma } from "./config/prisma";
 
 const app = express();
@@ -89,6 +91,22 @@ app.get("/health", async (_req, res) => {
   }
 });
 
+// Journal d'activite (ADMIN) : une ligne par requete API, quel que soit le module. Enregistree
+// sur "finish" (apres coup) plutot qu'ici, pour que req.user soit deja renseigne par le
+// middleware d'authentification propre a chaque route au moment de la lecture.
+app.use((req, res, next) => {
+  res.on("finish", () => {
+    void activityService.record({
+      userId: req.user?.id,
+      role: req.user?.role,
+      method: req.method,
+      path: req.path,
+      statusCode: res.statusCode,
+    });
+  });
+  next();
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/teachers", teachersRoutes);
@@ -103,6 +121,7 @@ app.use("/api/files", filesRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/signalements", signalementsRoutes);
 app.use("/api/paiements", paiementsRoutes);
+app.use("/api/activity", activityRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: { code: "NOT_FOUND", message: `Route inconnue: ${req.method} ${req.path}` } });

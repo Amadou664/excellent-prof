@@ -6,6 +6,7 @@ import '../../../widgets/error_state.dart';
 import '../../../widgets/loading_indicator.dart';
 import '../../../widgets/notification_bell_button.dart';
 import '../../../widgets/profile_summary_tab.dart';
+import '../../../widgets/session_timer_bar.dart';
 import 'disponibilites_screen.dart';
 import 'mes_eleves_screen.dart';
 import 'profil_candidature_screen.dart';
@@ -16,13 +17,20 @@ class TeacherDashboardScreen extends ConsumerStatefulWidget {
   const TeacherDashboardScreen({super.key});
 
   @override
-  ConsumerState<TeacherDashboardScreen> createState() => _TeacherDashboardScreenState();
+  ConsumerState<TeacherDashboardScreen> createState() =>
+      _TeacherDashboardScreenState();
 }
 
-class _TeacherDashboardScreenState extends ConsumerState<TeacherDashboardScreen> {
+class _TeacherDashboardScreenState
+    extends ConsumerState<TeacherDashboardScreen> {
   int _index = 0;
 
-  static const _titles = ['Mes élèves', 'Disponibilités', 'Candidature', 'Mon profil'];
+  static const _titles = [
+    'Mes élèves',
+    'Disponibilités',
+    'Candidature',
+    'Mon profil',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +40,7 @@ class _TeacherDashboardScreenState extends ConsumerState<TeacherDashboardScreen>
       appBar: AppBar(
         title: Text(_titles[_index]),
         actions: const [NotificationBellButton()],
+        bottom: const SessionTimerBar(),
       ),
       body: IndexedStack(
         index: _index,
@@ -56,10 +65,22 @@ class _TeacherDashboardScreenState extends ConsumerState<TeacherDashboardScreen>
         onTap: (i) => setState(() => _index = i),
         type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.groups_outlined), label: 'Élèves'),
-          BottomNavigationBarItem(icon: Icon(Icons.event_available_outlined), label: 'Dispos'),
-          BottomNavigationBarItem(icon: Icon(Icons.workspace_premium_outlined), label: 'Candidature'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profil'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.groups_outlined),
+            label: 'Élèves',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.event_available_outlined),
+            label: 'Dispos',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.workspace_premium_outlined),
+            label: 'Candidature',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: 'Profil',
+          ),
         ],
       ),
     );

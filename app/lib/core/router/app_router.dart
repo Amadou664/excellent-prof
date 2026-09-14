@@ -29,6 +29,7 @@ import '../../features/teacher/screens/cahier_texte_edit_screen.dart';
 import '../../features/teacher/screens/teacher_dashboard_screen.dart';
 import '../../models/enums.dart';
 import '../../providers/auth_providers.dart';
+import '../../providers/repository_providers.dart';
 import 'app_routes.dart';
 
 /// Écrans d'auth pour lesquels un utilisateur Firebase connecté mais sans
@@ -45,7 +46,8 @@ const _authFlowRoutes = {
 };
 
 bool _isAlwaysPublic(String loc) =>
-    loc.startsWith(AppRoutes.annonces) || loc.startsWith(AppRoutes.coursPourTous);
+    loc.startsWith(AppRoutes.annonces) ||
+    loc.startsWith(AppRoutes.coursPourTous);
 
 String _registerRouteForRole(Role role) {
   switch (role) {
@@ -78,7 +80,8 @@ String _dashboardForRole(Role role) {
 
 bool _isAllowedForRole(String loc, Role role) {
   if (loc.startsWith(AppRoutes.parentDashboard)) return role == Role.parent;
-  if (loc.startsWith(AppRoutes.teacherDashboard)) return role == Role.professeur;
+  if (loc.startsWith(AppRoutes.teacherDashboard))
+    return role == Role.professeur;
   if (loc.startsWith(AppRoutes.learnerDashboard)) {
     return role == Role.etudiant || role == Role.particulier;
   }
@@ -117,17 +120,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) => _redirect(ref, state),
     errorBuilder: (context, state) => Scaffold(
       appBar: AppBar(title: const Text('Page introuvable')),
-      body: Center(
-        child: Text('Aucune route ne correspond à "${state.uri}".'),
-      ),
+      body: Center(child: Text('Aucune route ne correspond à "${state.uri}".')),
     ),
     routes: [
-      GoRoute(path: AppRoutes.splash, builder: (context, state) => const SplashScreen()),
+      GoRoute(
+        path: AppRoutes.splash,
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(
         path: AppRoutes.roleSelection,
         builder: (context, state) => const RoleSelectionScreen(),
       ),
-      GoRoute(path: AppRoutes.login, builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: AppRoutes.login,
+        builder: (context, state) => const LoginScreen(),
+      ),
       GoRoute(
         path: AppRoutes.registerParent,
         builder: (context, state) => const RegisterParentScreen(),
@@ -182,9 +189,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.teacherCahierTexteEdit,
-        builder: (context, state) => CahierTexteEditScreen(
-          seanceId: state.pathParameters['seanceId']!,
-        ),
+        builder: (context, state) =>
+            CahierTexteEditScreen(seanceId: state.pathParameters['seanceId']!),
       ),
 
       // --- Étudiant / particulier ---
@@ -210,7 +216,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.annonceDetail,
-        builder: (context, state) => AnnonceDetailScreen(id: state.pathParameters['id']!),
+        builder: (context, state) =>
+            AnnonceDetailScreen(id: state.pathParameters['id']!),
       ),
 
       // --- Notifications ---
@@ -222,9 +229,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       // --- Messagerie ---
       GoRoute(
         path: AppRoutes.chat,
-        builder: (context, state) => ChatScreen(
-          demandeId: state.pathParameters['demandeId']!,
-        ),
+        builder: (context, state) =>
+            ChatScreen(demandeId: state.pathParameters['demandeId']!),
       ),
 
       // --- Cours pour tous ---
@@ -234,18 +240,31 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.coursPourTousDetail,
-        builder: (context, state) => CoursDetailScreen(id: state.pathParameters['id']!),
+        builder: (context, state) =>
+            CoursDetailScreen(id: state.pathParameters['id']!),
       ),
       GoRoute(
         path: AppRoutes.coursPourTousInscription,
-        builder: (context, state) => InscriptionScreen(coursId: state.pathParameters['id']!),
+        builder: (context, state) =>
+            InscriptionScreen(coursId: state.pathParameters['id']!),
       ),
     ],
   );
 });
 
+// Dernier chemin déjà signalé au journal d'activité, pour ne pas ré-enregistrer une "vue" à
+// chaque recalcul de `_redirect` (déclenché aussi par des changements d'état sans navigation
+// réelle, ex: `refreshListenable`) tant que l'utilisateur reste sur le même écran.
+String? _dernierEcranSignale;
+
 String? _redirect(Ref ref, GoRouterState state) {
   final loc = state.matchedLocation;
+
+  if (loc != _dernierEcranSignale) {
+    _dernierEcranSignale = loc;
+    // Best effort, ne doit jamais influencer la navigation elle-même.
+    ref.read(activityRepositoryProvider).enregistrerVue(loc);
+  }
 
   final authAsync = ref.read(authStateProvider);
   if (authAsync.isLoading && !authAsync.hasValue) {
@@ -284,7 +303,8 @@ String? _redirect(Ref ref, GoRouterState state) {
     return loc == target ? null : target;
   }
 
-  if (backendUser.role == Role.professeur && backendUser.status == UserStatus.enAttente) {
+  if (backendUser.role == Role.professeur &&
+      backendUser.status == UserStatus.enAttente) {
     if (_isAlwaysPublic(loc) || loc == AppRoutes.pendingValidation) return null;
     return AppRoutes.pendingValidation;
   }
