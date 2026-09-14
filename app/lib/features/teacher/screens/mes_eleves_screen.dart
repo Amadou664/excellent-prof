@@ -85,8 +85,20 @@ class MesElevesScreen extends ConsumerWidget {
               }
               final sorted = [...seances]
                 ..sort((a, b) => b.dateSeance.compareTo(a.dateSeance));
+              final demandesParId = {
+                for (final d
+                    in demandesAsync.valueOrNull ?? const <DemandeModel>[])
+                  d.id: d,
+              };
               return Column(
-                children: sorted.map((s) => _SeanceTile(seance: s)).toList(),
+                children: sorted
+                    .map(
+                      (s) => _SeanceTile(
+                        seance: s,
+                        demande: demandesParId[s.demandeId],
+                      ),
+                    )
+                    .toList(),
               );
             },
           ),
@@ -183,15 +195,19 @@ class _DemandeAConfirmerTile extends ConsumerWidget {
 }
 
 class _SeanceTile extends StatelessWidget {
-  const _SeanceTile({required this.seance});
+  const _SeanceTile({required this.seance, this.demande});
 
   final SeanceModel seance;
+  final DemandeModel? demande;
 
   @override
   Widget build(BuildContext context) {
     final dateLabel = DateFormat(
       'dd/MM/yyyy à HH:mm',
     ).format(seance.dateSeance);
+    final montant = demande?.montant;
+    final paye = demande?.paye ?? false;
+    final verrouillee = montant != null && !paye;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -199,13 +215,45 @@ class _SeanceTile extends StatelessWidget {
           seance.matiere ?? 'Séance',
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
-        subtitle: Text(dateLabel),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(dateLabel),
+            if (montant != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      paye ? Icons.check_circle : Icons.pending_outlined,
+                      size: 14,
+                      color: paye ? AppColors.success : Colors.orange,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      paye ? '$montant FCFA payé' : '$montant FCFA non payé',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: paye ? AppColors.success : Colors.orange[800],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: const Icon(Icons.chat_bubble_outline),
-              tooltip: 'Discuter',
+              icon: Icon(
+                verrouillee ? Icons.lock_outline : Icons.chat_bubble_outline,
+              ),
+              tooltip: verrouillee
+                  ? 'Discuter (verrouillé, en attente de paiement)'
+                  : 'Discuter',
               onPressed: () =>
                   context.push(AppRoutes.chatPath(seance.demandeId)),
             ),
