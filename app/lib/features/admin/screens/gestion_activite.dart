@@ -8,10 +8,12 @@ import '../../../providers/activity_provider.dart';
 import '../../../widgets/empty_state.dart';
 import '../../../widgets/error_state.dart';
 import '../../../widgets/loading_indicator.dart';
+import 'activity_labels.dart';
 
 /// Journal d'activité (ADMIN) : chaque requête reçue par le serveur, tous
 /// utilisateurs et tous modules confondus, plus les vues d'écran envoyées
-/// par l'application. `GET /activity`.
+/// par l'application — traduit en phrases claires (voir `activity_labels.dart`),
+/// jamais en jargon technique brut. `GET /activity`.
 class GestionActivite extends ConsumerStatefulWidget {
   const GestionActivite({super.key});
 
@@ -32,7 +34,7 @@ class _GestionActiviteState extends ConsumerState<GestionActivite> {
           padding: const EdgeInsets.all(12),
           child: TextField(
             decoration: const InputDecoration(
-              hintText: 'Rechercher (nom, rôle, écran, action...)',
+              hintText: 'Rechercher (nom, rôle...)',
               prefixIcon: Icon(Icons.search, size: 20),
               isDense: true,
               border: OutlineInputBorder(),
@@ -53,16 +55,11 @@ class _GestionActiviteState extends ConsumerState<GestionActivite> {
                 final q = _recherche.trim().toLowerCase();
                 final filtres = q.isEmpty
                     ? logs
-                    : logs
-                          .where(
-                            (l) =>
-                                (l.utilisateur?.toLowerCase().contains(q) ??
-                                    false) ||
-                                (l.role?.toLowerCase().contains(q) ?? false) ||
-                                l.path.toLowerCase().contains(q) ||
-                                l.method.toLowerCase().contains(q),
-                          )
-                          .toList();
+                    : logs.where((l) {
+                        return nomActeur(l).toLowerCase().contains(q) ||
+                            libelleRole(l.role).toLowerCase().contains(q) ||
+                            libelleActivite(l).toLowerCase().contains(q);
+                      }).toList();
                 if (filtres.isEmpty) {
                   return ListView(
                     children: const [
@@ -94,24 +91,15 @@ class _ActivityRow extends StatelessWidget {
 
   final ActivityLogModel log;
 
-  Color get _couleurMethode {
+  Color get _couleurStatut {
     if (log.estUneVue) return AppColors.info;
     if (log.estUneErreur) return AppColors.error;
-    switch (log.method) {
-      case 'POST':
-        return AppColors.success;
-      case 'PATCH':
-      case 'PUT':
-        return AppColors.warning;
-      case 'DELETE':
-        return AppColors.error;
-      default:
-        return AppColors.textSecondary;
-    }
+    return AppColors.success;
   }
 
   @override
   Widget build(BuildContext context) {
+    final role = libelleRole(log.role);
     return ListTile(
       dense: true,
       leading: Container(
@@ -119,20 +107,31 @@ class _ActivityRow extends StatelessWidget {
         height: 8,
         margin: const EdgeInsets.only(top: 4),
         decoration: BoxDecoration(
-          color: _couleurMethode,
+          color: _couleurStatut,
           shape: BoxShape.circle,
         ),
       ),
-      title: Text(
-        log.utilisateur ?? 'Utilisateur inconnu',
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+      title: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: nomActeur(log),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            if (role.isNotEmpty)
+              TextSpan(
+                text: ' ($role)',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
+          ],
+        ),
+        style: const TextStyle(fontSize: 13),
       ),
       subtitle: Text(
-        [
-          if (log.role != null) log.role,
-          log.estUneVue ? 'a ouvert ${log.path}' : '${log.method} ${log.path}',
-          if (log.statusCode != null) '(${log.statusCode})',
-        ].join(' — '),
+        libelleActivite(log),
         style: const TextStyle(fontSize: 12),
       ),
       trailing: Text(

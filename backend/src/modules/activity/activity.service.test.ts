@@ -25,6 +25,13 @@ describe("record", () => {
     expect(prismaMock.activityLog.create).not.toHaveBeenCalled();
   });
 
+  it("ignore les appels au journal lui-meme (evite le bruit auto-reference)", async () => {
+    await record({ method: "POST", path: "/api/activity", statusCode: 204 });
+    await record({ method: "GET", path: "/api/activity", statusCode: 200 });
+
+    expect(prismaMock.activityLog.create).not.toHaveBeenCalled();
+  });
+
   it("ne fait jamais echouer l'appelant si l'ecriture echoue", async () => {
     prismaMock.activityLog.create.mockRejectedValue(new Error("DB indisponible"));
 

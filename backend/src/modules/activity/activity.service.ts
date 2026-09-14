@@ -3,9 +3,11 @@ import { prisma } from "../../config/prisma";
 import { listActivityQuerySchema } from "./activity.schemas";
 import { z } from "zod";
 
-// Bruit d'infrastructure (verifie par Render/UptimeRobot, pas par un utilisateur) : ne raconte
-// rien sur ce que fait un humain dans l'app, donc exclu du journal d'activite.
-const ROUTES_IGNOREES = new Set(["/health"]);
+// "/health" : bruit d'infrastructure (verifie par Render/UptimeRobot, pas par un utilisateur).
+// "/api/activity" : la requete technique qui alimente le journal (POST, chaque navigation cote
+// app) ou le consulte (GET, cote admin) n'est pas elle-meme une activite a raconter — la vraie
+// information (l'ecran ouvert) est deja enregistree via recordVue avec method = "VUE".
+const ROUTES_IGNOREES = new Set(["/health", "/api/activity"]);
 
 /**
  * Enregistre une ligne du journal d'activite (ADMIN). Best effort : ne doit jamais faire
