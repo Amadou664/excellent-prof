@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { User } from "@prisma/client";
 import { prismaMock } from "../../test/setup";
 import { env } from "../../config/env";
-import { initierPaiement, traiterWebhook } from "./paiements.service";
+import { getStatutPaiement, initierPaiement, traiterWebhook } from "./paiements.service";
 
 function makeUser(overrides: Partial<User> = {}): User {
   return {
@@ -274,5 +274,72 @@ describe("traiterWebhook", () => {
 
     expect(prismaMock.paiement.update).not.toHaveBeenCalled();
     expect(prismaMock.demande.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("getStatutPaiement", () => {
+  it("ne remonte aucun detail tant que ce n'est pas paye", async () => {
+    prismaMock.demande.findUnique.mockResolvedValue(makeDemande({ paye: false }) as never);
+
+    const result = await getStatutPaiement("demande-1", makeUser({ id: "user-1" }));
+
+    expect(result).toEqual({
+      paye: false,
+      montant: 15000,
+      moyenPaiement: null,
+      transactionId: null,
+      datePaiement: null,
+    });
+    expect(prismaMock.paiement.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("sert de recu avec les details du dernier paiement CinetPay reussi", async () => {
+    const dateReussi = new Date("2026-09-14T10:00:00.000Z");
+    prismaMock.demande.findUnique.mockResolvedValue(makeDemande({ paye: true }) as never);
+    prismaMock.paiement.findFirst.mockResolvedValue({
+      moyenPaiement: "OM",
+      transactionId: "ep-demande1-abcd1234",
+      createdAt: dateReussi,
+    } as never);
+
+    const result = await getStatutPaiement("demande-1", makeUser({ id: "user-1" }));
+
+    expect(result).toEqual({
+      paye: true,
+      montant: 15000,
+      moyenPaiement: "OM",
+      transactionId: "ep-demande1-abcd1234",
+      datePaiement: dateReussi.toISOString(),
+    });
+  });
+
+  it("se rabat sur la date de mise a jour pour un paiement marque manuellement", async () => {
+    const dateMaj = new Date("2026-09-14T11:00:00.000Z");
+    prismaMock.demande.findUnique.mockResolvedValue(
+      makeDemande({ paye: true, updatedAt: dateMaj }) as never
+    );
+    prismaMock.paiement.findFirst.mockResolvedValue(null);
+
+    const result = await getStatutPaiement("demande-1", makeUser({ id: "user-1" }));
+
+    expect(result.moyenPaiement).toBeNull();
+    expect(result.transactionId).toBeNull();
+    expect(result.datePaiement).toBe(dateMaj.toISOString());
+  });
+
+  it("autorise le professeur assigne a consulter le statut", async () => {
+    prismaMock.demande.findUnique.mockResolvedValue(makeDemande({ paye: false }) as never);
+
+    await expect(
+      getStatutPaiement("demande-1", makeUser({ id: "prof-1", role: "PROFESSEUR" }))
+    ).resolves.toMatchObject({ paye: false });
+  });
+
+  it("refuse un utilisateur qui n'est ni la famille, ni le professeur, ni l'admin", async () => {
+    prismaMock.demande.findUnique.mockResolvedValue(makeDemande({ paye: false }) as never);
+
+    await expect(
+      getStatutPaiement("demande-1", makeUser({ id: "etranger-1", role: "PARENT" }))
+    ).rejects.toMatchObject({ status: 403 });
   });
 });

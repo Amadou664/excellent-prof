@@ -111,6 +111,23 @@ Body : `{ "token": "string" }` — enregistre le token FCM courant sur `User.fcm
 }
 ```
 
+## /paiements (paiement en ligne CinetPay d'une Demande)
+- `POST /paiements/initier` (propriétaire de la demande) body `{ "demandeId": "uuid" }` — la
+  demande doit déjà avoir un `montant` fixé (par `PATCH /demandes/:id/paiement`, ADMIN) et ne pas
+  être déjà payée. Retourne `{ "paymentUrl": "string", "transactionId": "string" }`, l'URL
+  CinetPay à ouvrir dans le navigateur.
+- `POST /paiements/webhook` / `GET /paiements/webhook` — appelé par les serveurs CinetPay, jamais
+  par l'app. Sur statut `ACCEPTED` (re-vérifié auprès de l'API CinetPay, jamais sur la seule foi
+  du corps du webhook) : marque la Demande `paye = true` et notifie famille, professeur et tous
+  les ADMIN.
+- `GET /paiements/:demandeId/statut` (famille propriétaire, professeur assigné, ou ADMIN) —
+  `{ "paye": bool, "montant": int|null, "moyenPaiement": "string|null", "transactionId":
+  "string|null", "datePaiement": "ISO datetime|null" }`. Sert de reçu : `moyenPaiement` /
+  `transactionId` viennent du dernier `Paiement` `REUSSI` de cette demande (absents si `paye`
+  vient d'un marquage manuel par l'ADMIN plutôt que de CinetPay).
+- `GET /paiements` (ADMIN) — historique complet de toutes les tentatives CinetPay, tous statuts
+  confondus (y compris échouées/en attente), contrairement au statut simple d'une Demande.
+
 ## /seances + /cahier-texte
 - `GET /seances/mine` (PROFESSEUR: ses séances ; PARENT/ETUDIANT/PARTICULIER: séances de leurs students).
 - `POST /seances` (PROFESSEUR ou ADMIN) body `{ demandeId, dateSeance }`.

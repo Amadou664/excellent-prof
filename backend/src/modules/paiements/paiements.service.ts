@@ -217,6 +217,11 @@ export async function listAllPaiements() {
   }));
 }
 
+/**
+ * Sert aussi de "recu" cote famille (voir app : bouton "Voir le recu" une fois paye) : quand la
+ * demande est payee via CinetPay, on remonte les details du dernier Paiement REUSSI plutot que de
+ * se limiter au simple booleen paye/non-paye de la Demande.
+ */
 export async function getStatutPaiement(demandeId: string, user: User) {
   const demande = await prisma.demande.findUnique({
     where: { id: demandeId },
@@ -224,8 +229,34 @@ export async function getStatutPaiement(demandeId: string, user: User) {
   });
   if (!demande) throw ApiError.notFound("Demande introuvable");
   const familyOwnerId = demande.student.parentId ?? demande.student.userId;
-  if (familyOwnerId !== user.id && user.role !== "ADMIN") {
+  const estParticipant =
+    familyOwnerId === user.id || demande.professeurId === user.id || user.role === "ADMIN";
+  if (!estParticipant) {
     throw ApiError.forbidden("Cette demande ne vous appartient pas");
   }
-  return { paye: demande.paye, montant: demande.montant };
+
+  if (!demande.paye) {
+    return {
+      paye: false,
+      montant: demande.montant,
+      moyenPaiement: null,
+      transactionId: null,
+      datePaiement: null,
+    };
+  }
+
+  const paiementReussi = await prisma.paiement.findFirst({
+    where: { demandeId, statut: "REUSSI" },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return {
+    paye: true,
+    montant: demande.montant,
+    moyenPaiement: paiementReussi?.moyenPaiement ?? null,
+    transactionId: paiementReussi?.transactionId ?? null,
+    // A defaut d'un vrai Paiement CinetPay (marquage manuel par l'ADMIN), updatedAt de la
+    // Demande reste la meilleure approximation disponible de la date de paiement.
+    datePaiement: (paiementReussi?.createdAt ?? demande.updatedAt).toISOString(),
+  };
 }

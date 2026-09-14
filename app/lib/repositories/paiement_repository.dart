@@ -1,5 +1,6 @@
 import '../core/network/api_client.dart';
 import '../models/paiement_model.dart';
+import '../models/statut_paiement_model.dart';
 
 /// Domaine `/paiements` : paiement en ligne (CinetPay) d'une Demande dont le
 /// montant a ete fixe par un admin.
@@ -12,9 +13,20 @@ class PaiementRepository {
   /// dans le navigateur.
   Future<String> initier({required String demandeId}) async {
     final data = await _client.unwrap(
-      () => _client.dio.post('/paiements/initier', data: {'demandeId': demandeId}),
+      () => _client.dio.post(
+        '/paiements/initier',
+        data: {'demandeId': demandeId},
+      ),
     );
     return data['paymentUrl'] as String;
+  }
+
+  /// `GET /paiements/:demandeId/statut` — sert de reçu une fois payé.
+  Future<StatutPaiementModel> statut(String demandeId) async {
+    final data = await _client.unwrap(
+      () => _client.dio.get('/paiements/$demandeId/statut'),
+    );
+    return StatutPaiementModel.fromJson(data as Map<String, dynamic>);
   }
 
   /// `GET /paiements` (ADMIN) — historique complet, tous statuts confondus.

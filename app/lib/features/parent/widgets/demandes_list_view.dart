@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/router/app_routes.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../models/demande_model.dart';
 import '../../../models/enums.dart';
 import '../../../providers/demandes_provider.dart';
@@ -153,6 +154,59 @@ class _DemandeTile extends ConsumerWidget {
     }
   }
 
+  Future<void> _voirRecu(BuildContext context, WidgetRef ref) async {
+    try {
+      final statut = await ref
+          .read(paiementRepositoryProvider)
+          .statut(demande.id);
+      if (!context.mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Reçu de paiement'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _LigneRecu('Matière', demande.matiere),
+              _LigneRecu(
+                'Montant',
+                statut.montant != null ? '${statut.montant} FCFA' : '—',
+              ),
+              _LigneRecu(
+                'Moyen de paiement',
+                statut.moyenPaiement ??
+                    'Enregistré manuellement par l\'administration',
+              ),
+              _LigneRecu(
+                'Date',
+                statut.datePaiement != null
+                    ? DateFormat(
+                        'dd/MM/yyyy à HH:mm',
+                      ).format(statut.datePaiement!)
+                    : '—',
+              ),
+              if (statut.transactionId != null)
+                _LigneRecu('Référence', statut.transactionId!),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Fermer'),
+            ),
+          ],
+        ),
+      );
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossible de récupérer le reçu.')),
+        );
+      }
+    }
+  }
+
   void _laisserUnAvis(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -257,6 +311,12 @@ class _DemandeTile extends ConsumerWidget {
                     icon: const Icon(Icons.payment, size: 18),
                     label: const Text('Payer maintenant'),
                   ),
+                if (demande.paye)
+                  OutlinedButton.icon(
+                    onPressed: () => _voirRecu(context, ref),
+                    icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                    label: const Text('Voir le reçu'),
+                  ),
                 if (_peutEtreAnnulee)
                   OutlinedButton(
                     onPressed: () => _annuler(context, ref),
@@ -273,6 +333,41 @@ class _DemandeTile extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LigneRecu extends StatelessWidget {
+  const _LigneRecu(this.label, this.valeur);
+
+  final String label;
+  final String valeur;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              valeur,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
       ),
     );
   }
